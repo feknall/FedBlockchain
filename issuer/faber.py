@@ -425,9 +425,9 @@ async def main(args):
             raise Exception("Invalid credential type:" + faber_agent.cred_type)
 
         # generate an invitation for Alice
-        await faber_agent.generate_invitation(
-            display_qr=True, reuse_connections=faber_agent.reuse_connections, wait=True
-        )
+        # await faber_agent.generate_invitation(
+        #     display_qr=True, reuse_connections=faber_agent.reuse_connections, wait=True
+        # )
 
         exchange_tracing = False
         options = (
@@ -439,10 +439,12 @@ async def main(args):
         )
         if faber_agent.revocation:
             options += "    (5) Revoke Credential\n" "    (6) Publish Revocations\n"
-        options += "    (7) See Credentials\n"
+        options += "    (7) See Issue Credentials\n"
         options += "    (8) Send Offer for a Proposed Credential\n"
         options += "    (9) Issue a Credential for a Credential Request\n"
         options += "    (10) Create a Local DID\n"
+        options += "    (11) Accept a Connection Request\n"
+        options += "    (12) See Credentials in Wallet\n"
         if faber_agent.endorser_role and faber_agent.endorser_role == "author":
             options += "    (D) Set Endorser's DID\n"
         if faber_agent.multitenant:
@@ -690,11 +692,16 @@ async def main(args):
                     "Creating a new invitation, please receive "
                     "and accept this invitation using Alice agent"
                 )
-                await faber_agent.generate_invitation(
-                    display_qr=True,
-                    reuse_connections=faber_agent.reuse_connections,
-                    wait=True,
+                invi_rec = await faber_agent.agent.admin_POST("/connections/create-invitation")
+                log_msg(
+                    json.dumps(invi_rec["invitation"]), label="Invitation Data:", color=None
                 )
+                faber_agent.agent.connection_id = invi_rec["connection_id"]
+                # await faber_agent.generate_invitation(
+                #     display_qr=True,
+                #     reuse_connections=faber_agent.reuse_connections,
+                #     wait=True,
+                # )
 
             elif option == "5" and faber_agent.revocation:
                 rev_reg_id = (await prompt("Enter revocation registry ID: ")).strip()
@@ -715,8 +722,8 @@ async def main(args):
                             "comment": "Revocation reason goes here ...",
                         },
                     )
-                except ClientError:
-                    pass
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
 
             elif option == "6" and faber_agent.revocation:
                 try:
@@ -736,8 +743,9 @@ async def main(args):
                 try:
                     resp = await faber_agent.agent.admin_GET("/issue-credential/records")
                     log_json(resp)
-                except ClientError:
-                    pass
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+
             elif option == "8":
                 try:
                     cred_exchange_id = await prompt("Enter cred-exchange-id: ")
@@ -750,7 +758,7 @@ async def main(args):
                             "/issue-credential/records/" + cred_exchange_id + "/send-offer")
                         faber_agent.agent.log("Offer sent successfully.")
                         log_json(send_offer_resp)
-                except ClientError:
+                except Exception:
                     pass
             elif option == "9":
                 try:
@@ -764,8 +772,8 @@ async def main(args):
                             "/issue-credential/records/" + cred_exchange_id + "/issue", {"comment": "hello world!"})
                         faber_agent.agent.log("Credential issued successfully.")
                         log_json(issue_resp)
-                except ClientError:
-                    pass
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
             elif option == "10":
                 try:
                     create_local_did_req = {
@@ -775,9 +783,25 @@ async def main(args):
                         }
                     }
                     resp = await faber_agent.agent.admin_POST('/wallet/did/create', create_local_did_req)
-                    log_msg(resp)
+                    log_json(resp)
                 except ClientError:
                     pass
+            elif option == "11":
+                try:
+                    resp = await faber_agent.agent.admin_POST(
+                        '/connections/' + faber_agent.agent.connection_id + '/accept-request')
+                    log_msg("Connection requested accepted successfully.")
+                    log_json(resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "12":
+                try:
+                    resp = await faber_agent.agent.admin_GET('/credentials')
+                    log_msg("Credentials read successfully.")
+                    log_json(resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+
         if faber_agent.show_timing:
             timing = await faber_agent.agent.fetch_timing()
             if timing:

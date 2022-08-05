@@ -140,16 +140,18 @@ async def main(args):
 
         await alice_agent.initialize(the_agent=agent)
 
-        log_status("#9 Input faber.py invitation details")
-        await input_invitation(alice_agent)
+        # log_status("#9 Input faber.py invitation details")
+        # await input_invitation(alice_agent)
 
         options = "    (3) Send Message\n" \
-                  "    (4) Input New Invitation\n" \
+                  "    (4) Receive New Invitation\n" \
                   "    (5) Propose a Credential \n" \
-                  "    (7) See Credentials\n" \
+                  "    (7) See Issue Credentials\n" \
                   "    (8) Send Request for a Credential Offer\n" \
                   "    (9) Store an Issued Credential\n" \
-                  "    (10) Create a Local DID\n"
+                  "    (10) Create a Local DID\n" \
+                  "    (11) Accept an Invitation\n" \
+                  "    (12) See Credentials in Wallet\n"
         if alice_agent.endorser_role and alice_agent.endorser_role == "author":
             options += "    (D) Set Endorser's DID\n"
         if alice_agent.multitenant:
@@ -199,10 +201,14 @@ async def main(args):
                     )
 
             elif option == "4":
-                # handle new invitation
-                log_status("Input new invitation details")
-                await input_invitation(alice_agent)
-
+                try:
+                    log_status("Input new invitation details")
+                    invitation = await prompt("Invitation details:")
+                    recv_invt_resp = await alice_agent.agent.admin_POST("/connections/receive-invitation", invitation)
+                    log_msg("Invitation received successfully.")
+                    alice_agent.agent.connection_id = recv_invt_resp["connection_id"]
+                except ClientError:
+                    pass
             elif option == "5":
                 try:
                     name = await prompt("Enter your name: ")
@@ -220,6 +226,7 @@ async def main(args):
                     proposal_resp = await alice_agent.agent.admin_POST("/issue-credential/send-proposal",
                                                                        data=proposal_request)
                     cred_ex_id = proposal_resp["credential_exchange_id"]
+                    alice_agent.agent.cred_ex_id = cred_ex_id
                     log_msg(f"Credential proposal sent successfully. credential_exchange_id: {cred_ex_id}")
                     log_json(proposal_resp)
                 except ClientError:
@@ -231,25 +238,29 @@ async def main(args):
                 except ClientError:
                     pass
             elif option == "8":
-                cred_ex_id = await prompt("Enter credential exchange id: ")
                 try:
-                    resp = await alice_agent.agent.admin_POST(
-                        "/issue-credential/records/" + cred_ex_id + "/send-request")
-                    log_msg(f"Credential request sent successfully.")
-                    log_json(resp)
+                    get_cred_resp = await alice_agent.agent.admin_GET(
+                        "/issue-credential/records/" + alice_agent.agent.cred_ex_id)
+                    log_json(get_cred_resp)
+
+                    confirm = await prompt("Confirm (Yes/No)? ")
+                    if confirm.lower() == "yes":
+                        resp = await alice_agent.agent.admin_POST(
+                            "/issue-credential/records/" + alice_agent.agent.cred_ex_id + "/send-request")
+                        log_msg(f"Credential request sent successfully.")
+                        log_json(resp)
                 except ClientError:
                     pass
             elif option == "9":
                 try:
-                    cred_exchange_id = await prompt("Enter cred-exchange-id: ")
-                    get_cred_resp = await alice_agent.agent.admin_GET("/issue-credential/records/" + cred_exchange_id)
+                    get_cred_resp = await alice_agent.agent.admin_GET("/issue-credential/records/" + alice_agent.agent.cred_ex_id)
                     log_json(get_cred_resp)
 
                     confirm = await prompt("Confirm (Yes/No)? ")
                     if confirm.lower() == "yes":
                         personal_credential_req = {"credential_id": "personal_credential"}
                         store_resp = await alice_agent.agent.admin_POST(
-                            "/issue-credential/records/" + cred_exchange_id + "/store", personal_credential_req)
+                            "/issue-credential/records/" + alice_agent.agent.cred_ex_id + "/store", personal_credential_req)
                         log_msg("Issued credential stored successfully.")
                         log_json(store_resp)
                 except ClientError:
@@ -266,6 +277,21 @@ async def main(args):
                     log_msg(resp)
                 except ClientError:
                     pass
+            elif option == "11":
+                try:
+                    accept_resp = await alice_agent.agent.admin_POST(
+                        "/connections/" + alice_agent.agent.connection_id + "/accept-invitation")
+                    log_msg("Invitation accepted successfully.")
+                    log_json(accept_resp)
+                except ClientError:
+                    pass
+            elif option == "12":
+                try:
+                    resp = await alice_agent.agent.admin_GET('/credentials')
+                    log_msg("Credentials read successfully.")
+                    log_json(resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
         if alice_agent.show_timing:
             timing = await alice_agent.agent.fetch_timing()
             if timing:

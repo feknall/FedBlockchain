@@ -112,48 +112,50 @@ class AriesAgent(DemoAgent):
             self._connection_ready.set_result(True)
 
     async def handle_connections(self, message):
+        print("handle_connections()")
+        pass
         # a bit of a hack, but for the mediator connection self._connection_ready
         # will be None
-        if not self._connection_ready:
-            return
-        conn_id = message["connection_id"]
-
-        # inviter:
-        if message.get("state") == "invitation":
-            self.connection_id = conn_id
-
-        # invitee:
-        if (not self.connection_id) and message["rfc23_state"] == "invitation-received":
-            self.connection_id = conn_id
-
-        if conn_id == self.connection_id:
-            # inviter or invitee:
-            if message["rfc23_state"] in ["completed", "response-sent"]:
-                if not self._connection_ready.done():
-                    self.log("Connected")
-                    self._connection_ready.set_result(True)
-
-                # setup endorser properties
-                self.log("Check for endorser role ...")
-                if self.endorser_role:
-                    if self.endorser_role == "author":
-                        connection_job_role = "TRANSACTION_AUTHOR"
-                        # short pause here to avoid race condition (both agents updating the connection role)
-                        await asyncio.sleep(2.0)
-                    elif self.endorser_role == "endorser":
-                        connection_job_role = "TRANSACTION_ENDORSER"
-                        # short pause here to avoid race condition (both agents updating the connection role)
-                        await asyncio.sleep(1.0)
-                    else:
-                        connection_job_role = "None"
-
-                    self.log(
-                        f"Updating endorser role for connection: {self.connection_id}, {connection_job_role}"
-                    )
-                    await self.admin_POST(
-                        "/transactions/" + self.connection_id + "/set-endorser-role",
-                        params={"transaction_my_job": connection_job_role},
-                    )
+        # if not self._connection_ready:
+        #     return
+        # conn_id = message["connection_id"]
+        #
+        # # inviter:
+        # if message.get("state") == "invitation":
+        #     self.connection_id = conn_id
+        #
+        # # invitee:
+        # if (not self.connection_id) and message["rfc23_state"] == "invitation-received":
+        #     self.connection_id = conn_id
+        #
+        # if conn_id == self.connection_id:
+        #     # inviter or invitee:
+        #     if message["rfc23_state"] in ["completed", "response-sent"]:
+        #         if not self._connection_ready.done():
+        #             self.log("Connected")
+        #             self._connection_ready.set_result(True)
+        #
+        #         # setup endorser properties
+        #         self.log("Check for endorser role ...")
+        #         if self.endorser_role:
+        #             if self.endorser_role == "author":
+        #                 connection_job_role = "TRANSACTION_AUTHOR"
+        #                 # short pause here to avoid race condition (both agents updating the connection role)
+        #                 await asyncio.sleep(2.0)
+        #             elif self.endorser_role == "endorser":
+        #                 connection_job_role = "TRANSACTION_ENDORSER"
+        #                 # short pause here to avoid race condition (both agents updating the connection role)
+        #                 await asyncio.sleep(1.0)
+        #             else:
+        #                 connection_job_role = "None"
+        #
+        #             self.log(
+        #                 f"Updating endorser role for connection: {self.connection_id}, {connection_job_role}"
+        #             )
+        #             await self.admin_POST(
+        #                 "/transactions/" + self.connection_id + "/set-endorser-role",
+        #                 params={"transaction_my_job": connection_job_role},
+        #             )
 
     async def handle_issue_credential(self, message):
         print("handle_issue_credential()")
@@ -577,9 +579,9 @@ class AriesAgent(DemoAgent):
             )
             qr.print_ascii(invert=True)
 
-        if wait:
-            log_msg("Waiting for connection...")
-            await self.detect_connection()
+        # if wait:
+        #     log_msg("Waiting for connection...")
+        #     await self.detect_connection()
 
         return invi_rec
 
@@ -589,9 +591,9 @@ class AriesAgent(DemoAgent):
             connection = await self.receive_invite(invite_details)
             log_json(connection, label="Invitation response:")
 
-        if wait:
-            log_msg("Waiting for connection...")
-            await self.detect_connection()
+        # if wait:
+        #     log_msg("Waiting for connection...")
+        #     await self.detect_connection()
 
     async def create_schema_and_cred_def(
             self, schema_name, schema_attrs, revocation, version=None
