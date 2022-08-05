@@ -156,372 +156,385 @@ class AriesAgent(DemoAgent):
                     )
 
     async def handle_issue_credential(self, message):
-        state = message.get("state")
-        credential_exchange_id = message["credential_exchange_id"]
-        prev_state = self.cred_state.get(credential_exchange_id)
-        if prev_state == state:
-            return  # ignore
-        self.cred_state[credential_exchange_id] = state
-
-        self.log(
-            "Credential: state = {}, credential_exchange_id = {}".format(
-                state,
-                credential_exchange_id,
-            )
-        )
-
-        if state == "offer_received":
-            log_status("#15 After receiving credential offer, send credential request")
-            await self.admin_POST(
-                f"/issue-credential/records/{credential_exchange_id}/send-request"
-            )
-
-        elif state == "credential_acked":
-            cred_id = message["credential_id"]
-            self.log(f"Stored credential {cred_id} in wallet")
-            log_status(f"#18.1 Stored credential {cred_id} in wallet")
-            resp = await self.admin_GET(f"/credential/{cred_id}")
-            log_json(resp, label="Credential details:")
-            log_json(
-                message["credential_request_metadata"],
-                label="Credential request metadata:",
-            )
-            self.log("credential_id", message["credential_id"])
-            self.log("credential_definition_id", message["credential_definition_id"])
-            self.log("schema_id", message["schema_id"])
-
-        elif state == "request_received":
-            log_status("#17 Issue credential to X")
-            # issue credentials based on the credential_definition_id
-            cred_attrs = self.cred_attrs[message["credential_definition_id"]]
-            cred_preview = {
-                "@type": CRED_PREVIEW_TYPE,
-                "attributes": [
-                    {"name": n, "value": v} for (n, v) in cred_attrs.items()
-                ],
-            }
-            try:
-                cred_ex_rec = await self.admin_POST(
-                    f"/issue-credential/records/{credential_exchange_id}/issue",
-                    {
-                        "comment": (
-                            f"Issuing credential, exchange {credential_exchange_id}"
-                        ),
-                        "credential_preview": cred_preview,
-                    },
-                )
-                rev_reg_id = cred_ex_rec.get("revoc_reg_id")
-                cred_rev_id = cred_ex_rec.get("revocation_id")
-                if rev_reg_id:
-                    self.log(f"Revocation registry ID: {rev_reg_id}")
-                if cred_rev_id:
-                    self.log(f"Credential revocation ID: {cred_rev_id}")
-            except ClientError:
-                pass
-
-        elif state == "abandoned":
-            log_status("Credential exchange abandoned")
-            self.log("Problem report message:", message.get("error_msg"))
+        print("handle_issue_credential()")
+        pass
+        # state = message.get("state")
+        # credential_exchange_id = message["credential_exchange_id"]
+        # prev_state = self.cred_state.get(credential_exchange_id)
+        # if prev_state == state:
+        #     return  # ignore
+        # self.cred_state[credential_exchange_id] = state
+        #
+        # self.log(
+        #     "Credential: state = {}, credential_exchange_id = {}".format(
+        #         state,
+        #         credential_exchange_id,
+        #     )
+        # )
+        #
+        # if state == "offer_received":
+        #     log_status("#15 After receiving credential offer, send credential request")
+        #     await self.admin_POST(
+        #         f"/issue-credential/records/{credential_exchange_id}/send-request"
+        #     )
+        #
+        # elif state == "credential_acked":
+        #     cred_id = message["credential_id"]
+        #     self.log(f"Stored credential {cred_id} in wallet")
+        #     log_status(f"#18.1 Stored credential {cred_id} in wallet")
+        #     resp = await self.admin_GET(f"/credential/{cred_id}")
+        #     log_json(resp, label="Credential details:")
+        #     log_json(
+        #         message["credential_request_metadata"],
+        #         label="Credential request metadata:",
+        #     )
+        #     self.log("credential_id", message["credential_id"])
+        #     self.log("credential_definition_id", message["credential_definition_id"])
+        #     self.log("schema_id", message["schema_id"])
+        #
+        # elif state == "request_received":
+        #     log_status("#17 Issue credential to X")
+        #     # issue credentials based on the credential_definition_id
+        #     cred_attrs = self.cred_attrs[message["credential_definition_id"]]
+        #     cred_preview = {
+        #         "@type": CRED_PREVIEW_TYPE,
+        #         "attributes": [
+        #             {"name": n, "value": v} for (n, v) in cred_attrs.items()
+        #         ],
+        #     }
+        #     try:
+        #         cred_ex_rec = await self.admin_POST(
+        #             f"/issue-credential/records/{credential_exchange_id}/issue",
+        #             {
+        #                 "comment": (
+        #                     f"Issuing credential, exchange {credential_exchange_id}"
+        #                 ),
+        #                 "credential_preview": cred_preview,
+        #             },
+        #         )
+        #         rev_reg_id = cred_ex_rec.get("revoc_reg_id")
+        #         cred_rev_id = cred_ex_rec.get("revocation_id")
+        #         if rev_reg_id:
+        #             self.log(f"Revocation registry ID: {rev_reg_id}")
+        #         if cred_rev_id:
+        #             self.log(f"Credential revocation ID: {cred_rev_id}")
+        #     except ClientError:
+        #         pass
+        #
+        # elif state == "abandoned":
+        #     log_status("Credential exchange abandoned")
+        #     self.log("Problem report message:", message.get("error_msg"))
 
     async def handle_issue_credential_v2_0(self, message):
-        state = message.get("state")
-        cred_ex_id = message["cred_ex_id"]
-        prev_state = self.cred_state.get(cred_ex_id)
-        if prev_state == state:
-            return  # ignore
-        self.cred_state[cred_ex_id] = state
-
-        self.log(f"Credential: state = {state}, cred_ex_id = {cred_ex_id}")
-
-        if state == "request-received":
-            log_status("#17 Issue credential to X")
-            # issue credential based on offer preview in cred ex record
-            await self.admin_POST(
-                f"/issue-credential-2.0/records/{cred_ex_id}/issue",
-                {"comment": f"Issuing credential, exchange {cred_ex_id}"},
-            )
-
-        elif state == "offer-received":
-            log_status("#15 After receiving credential offer, send credential request")
-            if message["by_format"]["cred_offer"].get("indy"):
-                await self.admin_POST(
-                    f"/issue-credential-2.0/records/{cred_ex_id}/send-request"
-                )
-            elif message["by_format"]["cred_offer"].get("ld_proof"):
-                holder_did = await self.admin_POST(
-                    "/wallet/did/create",
-                    {"method": "key", "options": {"key_type": "bls12381g2"}},
-                )
-                data = {"holder_did": holder_did["result"]["did"]}
-                await self.admin_POST(
-                    f"/issue-credential-2.0/records/{cred_ex_id}/send-request", data
-                )
-
-        elif state == "done":
-            pass
-            # Logic moved to detail record specific handler
-
-        elif state == "abandoned":
-            log_status("Credential exchange abandoned")
-            self.log("Problem report message:", message.get("error_msg"))
+        print("handle_issue_credential_v2_0()")
+        pass
+        # state = message.get("state")
+        # cred_ex_id = message["cred_ex_id"]
+        # prev_state = self.cred_state.get(cred_ex_id)
+        # if prev_state == state:
+        #     return  # ignore
+        # self.cred_state[cred_ex_id] = state
+        #
+        # self.log(f"Credential: state = {state}, cred_ex_id = {cred_ex_id}")
+        #
+        # if state == "request-received":
+        #     log_status("#17 Issue credential to X")
+        #     # issue credential based on offer preview in cred ex record
+        #     await self.admin_POST(
+        #         f"/issue-credential-2.0/records/{cred_ex_id}/issue",
+        #         {"comment": f"Issuing credential, exchange {cred_ex_id}"},
+        #     )
+        #
+        # elif state == "offer-received":
+        #     log_status("#15 After receiving credential offer, send credential request")
+        #     if message["by_format"]["cred_offer"].get("indy"):
+        #         await self.admin_POST(
+        #             f"/issue-credential-2.0/records/{cred_ex_id}/send-request"
+        #         )
+        #     elif message["by_format"]["cred_offer"].get("ld_proof"):
+        #         holder_did = await self.admin_POST(
+        #             "/wallet/did/create",
+        #             {"method": "key", "options": {"key_type": "bls12381g2"}},
+        #         )
+        #         data = {"holder_did": holder_did["result"]["did"]}
+        #         await self.admin_POST(
+        #             f"/issue-credential-2.0/records/{cred_ex_id}/send-request", data
+        #         )
+        #
+        # elif state == "done":
+        #     pass
+        #     # Logic moved to detail record specific handler
+        #
+        # elif state == "abandoned":
+        #     log_status("Credential exchange abandoned")
+        #     self.log("Problem report message:", message.get("error_msg"))
 
     async def handle_issue_credential_v2_0_indy(self, message):
-        rev_reg_id = message.get("rev_reg_id")
-        cred_rev_id = message.get("cred_rev_id")
-        cred_id_stored = message.get("cred_id_stored")
-
-        if cred_id_stored:
-            cred_id = message["cred_id_stored"]
-            log_status(f"#18.1 Stored credential {cred_id} in wallet")
-            cred = await self.admin_GET(f"/credential/{cred_id}")
-            log_json(cred, label="Credential details:")
-            self.log("credential_id", cred_id)
-            self.log("cred_def_id", cred["cred_def_id"])
-            self.log("schema_id", cred["schema_id"])
-            # track last successfully received credential
-            self.last_credential_received = cred
-
-        if rev_reg_id and cred_rev_id:
-            self.log(f"Revocation registry ID: {rev_reg_id}")
-            self.log(f"Credential revocation ID: {cred_rev_id}")
+        print("handle_issue_credential_v2_0_indy()")
+        pass
+        # rev_reg_id = message.get("rev_reg_id")
+        # cred_rev_id = message.get("cred_rev_id")
+        # cred_id_stored = message.get("cred_id_stored")
+        #
+        # if cred_id_stored:
+        #     cred_id = message["cred_id_stored"]
+        #     log_status(f"#18.1 Stored credential {cred_id} in wallet")
+        #     cred = await self.admin_GET(f"/credential/{cred_id}")
+        #     log_json(cred, label="Credential details:")
+        #     self.log("credential_id", cred_id)
+        #     self.log("cred_def_id", cred["cred_def_id"])
+        #     self.log("schema_id", cred["schema_id"])
+        #     # track last successfully received credential
+        #     self.last_credential_received = cred
+        #
+        # if rev_reg_id and cred_rev_id:
+        #     self.log(f"Revocation registry ID: {rev_reg_id}")
+        #     self.log(f"Credential revocation ID: {cred_rev_id}")
 
     async def handle_issue_credential_v2_0_ld_proof(self, message):
-        self.log(f"LD Credential: message = {message}")
+        print("handle_issue_credential_v2_0_ld_proof()")
+        pass
+        # self.log(f"LD Credential: message = {message}")
 
     async def handle_issuer_cred_rev(self, message):
+        print("handle_issuer_cred_rev()")
         pass
 
     async def handle_present_proof(self, message):
-        state = message.get("state")
-
-        presentation_exchange_id = message["presentation_exchange_id"]
-        presentation_request = message["presentation_request"]
-        self.log(
-            "Presentation: state =",
-            state,
-            ", presentation_exchange_id =",
-            presentation_exchange_id,
-        )
-
-        if state == "request_received":
-            log_status(
-                "#24 Query for credentials in the wallet that satisfy the proof request"
-            )
-
-            # include self-attested attributes (not included in credentials)
-            credentials_by_reft = {}
-            revealed = {}
-            self_attested = {}
-            predicates = {}
-
-            try:
-                # select credentials to provide for the proof
-                credentials = await self.admin_GET(
-                    f"/present-proof/records/{presentation_exchange_id}/credentials"
-                )
-                if credentials:
-                    for row in sorted(
-                            credentials,
-                            key=lambda c: int(c["cred_info"]["attrs"]["timestamp"]),
-                            reverse=True,
-                    ):
-                        for referent in row["presentation_referents"]:
-                            if referent not in credentials_by_reft:
-                                credentials_by_reft[referent] = row
-
-                for referent in presentation_request["requested_attributes"]:
-                    if referent in credentials_by_reft:
-                        revealed[referent] = {
-                            "cred_id": credentials_by_reft[referent]["cred_info"][
-                                "referent"
-                            ],
-                            "revealed": True,
-                        }
-                    else:
-                        self_attested[referent] = "my self-attested value"
-
-                for referent in presentation_request["requested_predicates"]:
-                    if referent in credentials_by_reft:
-                        predicates[referent] = {
-                            "cred_id": credentials_by_reft[referent]["cred_info"][
-                                "referent"
-                            ]
-                        }
-
-                log_status("#25 Generate the proof")
-                request = {
-                    "requested_predicates": predicates,
-                    "requested_attributes": revealed,
-                    "self_attested_attributes": self_attested,
-                }
-
-                log_status("#26 Send the proof to X")
-                await self.admin_POST(
-                    (
-                        "/present-proof/records/"
-                        f"{presentation_exchange_id}/send-presentation"
-                    ),
-                    request,
-                )
-            except ClientError:
-                pass
-
-        elif state == "presentation_received":
-            log_status("#27 Process the proof provided by X")
-            log_status("#28 Check if proof is valid")
-            proof = await self.admin_POST(
-                f"/present-proof/records/{presentation_exchange_id}/verify-presentation"
-            )
-            self.log("Proof =", proof["verified"])
-
-        elif state == "abandoned":
-            log_status("Presentation exchange abandoned")
-            self.log("Problem report message:", message.get("error_msg"))
+        print("handle_present_proof()")
+        pass
+        # state = message.get("state")
+        #
+        # presentation_exchange_id = message["presentation_exchange_id"]
+        # presentation_request = message["presentation_request"]
+        # self.log(
+        #     "Presentation: state =",
+        #     state,
+        #     ", presentation_exchange_id =",
+        #     presentation_exchange_id,
+        # )
+        #
+        # if state == "request_received":
+        #     log_status(
+        #         "#24 Query for credentials in the wallet that satisfy the proof request"
+        #     )
+        #
+        #     # include self-attested attributes (not included in credentials)
+        #     credentials_by_reft = {}
+        #     revealed = {}
+        #     self_attested = {}
+        #     predicates = {}
+        #
+        #     try:
+        #         # select credentials to provide for the proof
+        #         credentials = await self.admin_GET(
+        #             f"/present-proof/records/{presentation_exchange_id}/credentials"
+        #         )
+        #         if credentials:
+        #             for row in sorted(
+        #                     credentials,
+        #                     key=lambda c: int(c["cred_info"]["attrs"]["timestamp"]),
+        #                     reverse=True,
+        #             ):
+        #                 for referent in row["presentation_referents"]:
+        #                     if referent not in credentials_by_reft:
+        #                         credentials_by_reft[referent] = row
+        #
+        #         for referent in presentation_request["requested_attributes"]:
+        #             if referent in credentials_by_reft:
+        #                 revealed[referent] = {
+        #                     "cred_id": credentials_by_reft[referent]["cred_info"][
+        #                         "referent"
+        #                     ],
+        #                     "revealed": True,
+        #                 }
+        #             else:
+        #                 self_attested[referent] = "my self-attested value"
+        #
+        #         for referent in presentation_request["requested_predicates"]:
+        #             if referent in credentials_by_reft:
+        #                 predicates[referent] = {
+        #                     "cred_id": credentials_by_reft[referent]["cred_info"][
+        #                         "referent"
+        #                     ]
+        #                 }
+        #
+        #         log_status("#25 Generate the proof")
+        #         request = {
+        #             "requested_predicates": predicates,
+        #             "requested_attributes": revealed,
+        #             "self_attested_attributes": self_attested,
+        #         }
+        #
+        #         log_status("#26 Send the proof to X")
+        #         await self.admin_POST(
+        #             (
+        #                 "/present-proof/records/"
+        #                 f"{presentation_exchange_id}/send-presentation"
+        #             ),
+        #             request,
+        #         )
+        #     except ClientError:
+        #         pass
+        #
+        # elif state == "presentation_received":
+        #     log_status("#27 Process the proof provided by X")
+        #     log_status("#28 Check if proof is valid")
+        #     proof = await self.admin_POST(
+        #         f"/present-proof/records/{presentation_exchange_id}/verify-presentation"
+        #     )
+        #     self.log("Proof =", proof["verified"])
+        #
+        # elif state == "abandoned":
+        #     log_status("Presentation exchange abandoned")
+        #     self.log("Problem report message:", message.get("error_msg"))
 
     async def handle_present_proof_v2_0(self, message):
-        state = message.get("state")
-        pres_ex_id = message["pres_ex_id"]
-        self.log(f"Presentation: state = {state}, pres_ex_id = {pres_ex_id}")
-
-        if state == "request-received":
-            # prover role
-            log_status(
-                "#24 Query for credentials in the wallet that satisfy the proof request"
-            )
-            pres_request_indy = message["by_format"].get("pres_request", {}).get("indy")
-            pres_request_dif = message["by_format"].get("pres_request", {}).get("dif")
-
-            if pres_request_indy:
-                # include self-attested attributes (not included in credentials)
-                creds_by_reft = {}
-                revealed = {}
-                self_attested = {}
-                predicates = {}
-
-                try:
-                    # select credentials to provide for the proof
-                    creds = await self.admin_GET(
-                        f"/present-proof-2.0/records/{pres_ex_id}/credentials"
-                    )
-                    if creds:
-                        if "timestamp" in creds[0]["cred_info"]["attrs"]:
-                            sorted_creds = sorted(
-                                creds,
-                                key=lambda c: int(c["cred_info"]["attrs"]["timestamp"]),
-                                reverse=True,
-                            )
-                        else:
-                            sorted_creds = creds
-                        for row in sorted_creds:
-                            for referent in row["presentation_referents"]:
-                                if referent not in creds_by_reft:
-                                    creds_by_reft[referent] = row
-
-                    for referent in pres_request_indy["requested_attributes"]:
-                        if referent in creds_by_reft:
-                            revealed[referent] = {
-                                "cred_id": creds_by_reft[referent]["cred_info"][
-                                    "referent"
-                                ],
-                                "revealed": True,
-                            }
-                        else:
-                            self_attested[referent] = "my self-attested value"
-
-                    for referent in pres_request_indy["requested_predicates"]:
-                        if referent in creds_by_reft:
-                            predicates[referent] = {
-                                "cred_id": creds_by_reft[referent]["cred_info"][
-                                    "referent"
-                                ]
-                            }
-
-                    log_status("#25 Generate the proof")
-                    request = {
-                        "indy": {
-                            "requested_predicates": predicates,
-                            "requested_attributes": revealed,
-                            "self_attested_attributes": self_attested,
-                        }
-                    }
-                except ClientError:
-                    pass
-
-            elif pres_request_dif:
-                try:
-                    # select credentials to provide for the proof
-                    creds = await self.admin_GET(
-                        f"/present-proof-2.0/records/{pres_ex_id}/credentials"
-                    )
-                    if creds and 0 < len(creds):
-                        creds = sorted(
-                            creds,
-                            key=lambda c: c["issuanceDate"],
-                            reverse=True,
-                        )
-                        record_id = creds[0]["record_id"]
-                    else:
-                        record_id = None
-
-                    log_status("#25 Generate the proof")
-                    request = {
-                        "dif": {},
-                    }
-                    # specify the record id for each input_descriptor id:
-                    request["dif"]["record_ids"] = {}
-                    for input_descriptor in pres_request_dif["presentation_definition"][
-                        "input_descriptors"
-                    ]:
-                        request["dif"]["record_ids"][input_descriptor["id"]] = [
-                            record_id,
-                        ]
-                    log_msg("presenting ld-presentation:", request)
-
-                    # NOTE that the holder/prover can also/or specify constraints by including the whole proof request
-                    # and constraining the presented credentials by adding filters, for example:
-                    #
-                    # request = {
-                    #     "dif": pres_request_dif,
-                    # }
-                    # request["dif"]["presentation_definition"]["input_descriptors"]["constraints"]["fields"].append(
-                    #      {
-                    #          "path": [
-                    #              "$.id"
-                    #          ],
-                    #          "purpose": "Specify the id of the credential to present",
-                    #          "filter": {
-                    #              "const": "https://credential.example.com/residents/1234567890"
-                    #          }
-                    #      }
-                    # )
-                    #
-                    # (NOTE the above assumes the credential contains an "id", which is an optional field)
-
-                except ClientError:
-                    pass
-
-            else:
-                raise Exception("Invalid presentation request received")
-
-            log_status("#26 Send the proof to X: " + json.dumps(request))
-            await self.admin_POST(
-                f"/present-proof-2.0/records/{pres_ex_id}/send-presentation",
-                request,
-            )
-
-        elif state == "presentation-received":
-            # verifier role
-            log_status("#27 Process the proof provided by X")
-            log_status("#28 Check if proof is valid")
-            proof = await self.admin_POST(
-                f"/present-proof-2.0/records/{pres_ex_id}/verify-presentation"
-            )
-            self.log("Proof =", proof["verified"])
-            self.last_proof_received = proof
-
-        elif state == "abandoned":
-            log_status("Presentation exchange abandoned")
-            self.log("Problem report message:", message.get("error_msg"))
+        print("handle_present_proof_v2_0()")
+        pass
+        # state = message.get("state")
+        # pres_ex_id = message["pres_ex_id"]
+        # self.log(f"Presentation: state = {state}, pres_ex_id = {pres_ex_id}")
+        #
+        # if state == "request-received":
+        #     # prover role
+        #     log_status(
+        #         "#24 Query for credentials in the wallet that satisfy the proof request"
+        #     )
+        #     pres_request_indy = message["by_format"].get("pres_request", {}).get("indy")
+        #     pres_request_dif = message["by_format"].get("pres_request", {}).get("dif")
+        #
+        #     if pres_request_indy:
+        #         # include self-attested attributes (not included in credentials)
+        #         creds_by_reft = {}
+        #         revealed = {}
+        #         self_attested = {}
+        #         predicates = {}
+        #
+        #         try:
+        #             # select credentials to provide for the proof
+        #             creds = await self.admin_GET(
+        #                 f"/present-proof-2.0/records/{pres_ex_id}/credentials"
+        #             )
+        #             if creds:
+        #                 if "timestamp" in creds[0]["cred_info"]["attrs"]:
+        #                     sorted_creds = sorted(
+        #                         creds,
+        #                         key=lambda c: int(c["cred_info"]["attrs"]["timestamp"]),
+        #                         reverse=True,
+        #                     )
+        #                 else:
+        #                     sorted_creds = creds
+        #                 for row in sorted_creds:
+        #                     for referent in row["presentation_referents"]:
+        #                         if referent not in creds_by_reft:
+        #                             creds_by_reft[referent] = row
+        #
+        #             for referent in pres_request_indy["requested_attributes"]:
+        #                 if referent in creds_by_reft:
+        #                     revealed[referent] = {
+        #                         "cred_id": creds_by_reft[referent]["cred_info"][
+        #                             "referent"
+        #                         ],
+        #                         "revealed": True,
+        #                     }
+        #                 else:
+        #                     self_attested[referent] = "my self-attested value"
+        #
+        #             for referent in pres_request_indy["requested_predicates"]:
+        #                 if referent in creds_by_reft:
+        #                     predicates[referent] = {
+        #                         "cred_id": creds_by_reft[referent]["cred_info"][
+        #                             "referent"
+        #                         ]
+        #                     }
+        #
+        #             log_status("#25 Generate the proof")
+        #             request = {
+        #                 "indy": {
+        #                     "requested_predicates": predicates,
+        #                     "requested_attributes": revealed,
+        #                     "self_attested_attributes": self_attested,
+        #                 }
+        #             }
+        #         except ClientError:
+        #             pass
+        #
+        #     elif pres_request_dif:
+        #         try:
+        #             # select credentials to provide for the proof
+        #             creds = await self.admin_GET(
+        #                 f"/present-proof-2.0/records/{pres_ex_id}/credentials"
+        #             )
+        #             if creds and 0 < len(creds):
+        #                 creds = sorted(
+        #                     creds,
+        #                     key=lambda c: c["issuanceDate"],
+        #                     reverse=True,
+        #                 )
+        #                 record_id = creds[0]["record_id"]
+        #             else:
+        #                 record_id = None
+        #
+        #             log_status("#25 Generate the proof")
+        #             request = {
+        #                 "dif": {},
+        #             }
+        #             # specify the record id for each input_descriptor id:
+        #             request["dif"]["record_ids"] = {}
+        #             for input_descriptor in pres_request_dif["presentation_definition"][
+        #                 "input_descriptors"
+        #             ]:
+        #                 request["dif"]["record_ids"][input_descriptor["id"]] = [
+        #                     record_id,
+        #                 ]
+        #             log_msg("presenting ld-presentation:", request)
+        #
+        #             # NOTE that the holder/prover can also/or specify constraints by including the whole proof request
+        #             # and constraining the presented credentials by adding filters, for example:
+        #             #
+        #             # request = {
+        #             #     "dif": pres_request_dif,
+        #             # }
+        #             # request["dif"]["presentation_definition"]["input_descriptors"]["constraints"]["fields"].append(
+        #             #      {
+        #             #          "path": [
+        #             #              "$.id"
+        #             #          ],
+        #             #          "purpose": "Specify the id of the credential to present",
+        #             #          "filter": {
+        #             #              "const": "https://credential.example.com/residents/1234567890"
+        #             #          }
+        #             #      }
+        #             # )
+        #             #
+        #             # (NOTE the above assumes the credential contains an "id", which is an optional field)
+        #
+        #         except ClientError:
+        #             pass
+        #
+        #     else:
+        #         raise Exception("Invalid presentation request received")
+        #
+        #     log_status("#26 Send the proof to X: " + json.dumps(request))
+        #     await self.admin_POST(
+        #         f"/present-proof-2.0/records/{pres_ex_id}/send-presentation",
+        #         request,
+        #     )
+        #
+        # elif state == "presentation-received":
+        #     # verifier role
+        #     log_status("#27 Process the proof provided by X")
+        #     log_status("#28 Check if proof is valid")
+        #     proof = await self.admin_POST(
+        #         f"/present-proof-2.0/records/{pres_ex_id}/verify-presentation"
+        #     )
+        #     self.log("Proof =", proof["verified"])
+        #     self.last_proof_received = proof
+        #
+        # elif state == "abandoned":
+        #     log_status("Presentation exchange abandoned")
+        #     self.log("Problem report message:", message.get("error_msg"))
 
     async def handle_basicmessages(self, message):
         self.log("Received message:", message["content"])
@@ -792,17 +805,6 @@ class AgentContainer:
             return None
         else:
             raise Exception("Invalid credential type:" + self.cred_type)
-
-    async def propose_credential(self, cred_attrs: list):
-        proposal_request = {
-            "connection_id": self.agent.connection_id,
-            "credential_proposal": {
-                "attributes": cred_attrs
-            }
-        }
-        proposal = await self.agent.admin_POST("/issue-credential/send-proposal", data=proposal_request)
-        cred_ex_id = proposal["credential_exchange_id"]
-        log_msg(f"Credential proposed. credential_exchange_id: {cred_ex_id}")
 
     async def issue_credential(
             self,

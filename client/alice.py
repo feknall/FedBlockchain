@@ -20,8 +20,10 @@ from base.support.utils import (  # noqa:E402
     log_status,
     log_timer,
     prompt,
-    prompt_loop,
+    prompt_loop, log_json,
 )
+
+from aiohttp import ClientError
 
 logging.basicConfig(level=logging.WARNING)
 LOGGER = logging.getLogger(__name__)
@@ -141,9 +143,13 @@ async def main(args):
         log_status("#9 Input faber.py invitation details")
         await input_invitation(alice_agent)
 
-        options = "    (3) Send Message\n " \
+        options = "    (3) Send Message\n" \
                   "    (4) Input New Invitation\n" \
-                  "    (5) Propose a Credential \n"
+                  "    (5) Propose a Credential \n" \
+                  "    (7) See Credentials\n" \
+                  "    (8) Send Request for a Credential Offer\n" \
+                  "    (9) Store an Issued Credential\n" \
+                  "    (10) Create a Local DID\n"
         if alice_agent.endorser_role and alice_agent.endorser_role == "author":
             options += "    (D) Set Endorser's DID\n"
         if alice_agent.multitenant:
@@ -198,11 +204,68 @@ async def main(args):
                 await input_invitation(alice_agent)
 
             elif option == "5":
-                name = await prompt("Enter your name: ")
-                if name:
-                    cred_attr = [{"name": "score", "value": "25"}]
-                    await alice_agent.propose_credential(cred_attr)
+                try:
+                    name = await prompt("Enter your name: ")
+                    cin_number = await prompt("Enter your cin number: ")
 
+                    cred_attrs = [{"name": "name", "value": "{}".format(name)},
+                                  {"name": "cin_number", "value": "{}".format(cin_number)}]
+
+                    proposal_request = {
+                        "connection_id": alice_agent.agent.connection_id,
+                        "credential_proposal": {
+                            "attributes": cred_attrs
+                        }
+                    }
+                    proposal_resp = await alice_agent.agent.admin_POST("/issue-credential/send-proposal",
+                                                                       data=proposal_request)
+                    cred_ex_id = proposal_resp["credential_exchange_id"]
+                    log_msg(f"Credential proposal sent successfully. credential_exchange_id: {cred_ex_id}")
+                    log_json(proposal_resp)
+                except ClientError:
+                    pass
+            elif option == "7":
+                try:
+                    resp = await alice_agent.agent.admin_GET("/issue-credential/records")
+                    log_json(resp)
+                except ClientError:
+                    pass
+            elif option == "8":
+                cred_ex_id = await prompt("Enter credential exchange id: ")
+                try:
+                    resp = await alice_agent.agent.admin_POST(
+                        "/issue-credential/records/" + cred_ex_id + "/send-request")
+                    log_msg(f"Credential request sent successfully.")
+                    log_json(resp)
+                except ClientError:
+                    pass
+            elif option == "9":
+                try:
+                    cred_exchange_id = await prompt("Enter cred-exchange-id: ")
+                    get_cred_resp = await alice_agent.agent.admin_GET("/issue-credential/records/" + cred_exchange_id)
+                    log_json(get_cred_resp)
+
+                    confirm = await prompt("Confirm (Yes/No)? ")
+                    if confirm.lower() == "yes":
+                        personal_credential_req = {"credential_id": "personal_credential"}
+                        store_resp = await alice_agent.agent.admin_POST(
+                            "/issue-credential/records/" + cred_exchange_id + "/store", personal_credential_req)
+                        log_msg("Issued credential stored successfully.")
+                        log_json(store_resp)
+                except ClientError:
+                    pass
+            elif option == "10":
+                try:
+                    create_local_did_req = {
+                        "method": "sov",
+                        "options": {
+                            "key_type": "ed25519"
+                        }
+                    }
+                    resp = await alice_agent.agent.admin_POST('/wallet/did/create', create_local_did_req)
+                    log_msg(resp)
+                except ClientError:
+                    pass
         if alice_agent.show_timing:
             timing = await alice_agent.agent.fetch_timing()
             if timing:
