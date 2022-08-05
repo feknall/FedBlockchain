@@ -140,18 +140,20 @@ async def main(args):
 
         await alice_agent.initialize(the_agent=agent)
 
-        # log_status("#9 Input faber.py invitation details")
+        # log_status("#9 Input verifier.py invitation details")
         # await input_invitation(alice_agent)
 
         options = "    (3) Send Message\n" \
                   "    (4) Receive New Invitation\n" \
                   "    (5) Propose a Credential \n" \
-                  "    (7) See Issue Credentials\n" \
+                  "    (7) See Issue Credential Records\n" \
                   "    (8) Send Request for a Credential Offer\n" \
                   "    (9) Store an Issued Credential\n" \
                   "    (10) Create a Local DID\n" \
                   "    (11) Accept an Invitation\n" \
-                  "    (12) See Credentials in Wallet\n"
+                  "    (12) See Credentials in Wallet\n" \
+                  "    (13) See Proof Records\n" \
+                  "    (14) Send Presentation for a Present Proof\n"
         if alice_agent.endorser_role and alice_agent.endorser_role == "author":
             options += "    (D) Set Endorser's DID\n"
         if alice_agent.multitenant:
@@ -253,14 +255,17 @@ async def main(args):
                     pass
             elif option == "9":
                 try:
-                    get_cred_resp = await alice_agent.agent.admin_GET("/issue-credential/records/" + alice_agent.agent.cred_ex_id)
+                    get_cred_resp = await alice_agent.agent.admin_GET(
+                        "/issue-credential/records/" + alice_agent.agent.cred_ex_id)
                     log_json(get_cred_resp)
 
                     confirm = await prompt("Confirm (Yes/No)? ")
+                    credential_id = await prompt("Enter an ID for storing the credential: ")
                     if confirm.lower() == "yes":
-                        personal_credential_req = {"credential_id": "personal_credential"}
+                        personal_credential_req = {"credential_id": credential_id}
                         store_resp = await alice_agent.agent.admin_POST(
-                            "/issue-credential/records/" + alice_agent.agent.cred_ex_id + "/store", personal_credential_req)
+                            "/issue-credential/records/" + alice_agent.agent.cred_ex_id + "/store",
+                            personal_credential_req)
                         log_msg("Issued credential stored successfully.")
                         log_json(store_resp)
                 except ClientError:
@@ -290,6 +295,36 @@ async def main(args):
                     resp = await alice_agent.agent.admin_GET('/credentials')
                     log_msg("Credentials read successfully.")
                     log_json(resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "13":
+                try:
+                    present_proof_rec_resp = await alice_agent.agent.admin_GET('/present-proof/records')
+                    log_msg("Present proof records read successfully.")
+                    log_json(present_proof_rec_resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "14":
+                try:
+                    present_proof_rec_resp = await alice_agent.agent.admin_GET('/present-proof/records')
+                    log_json(present_proof_rec_resp)
+                    pres_ex_id = await prompt("Enter pres-ex-id: ")
+                    cred_id = await prompt("Enter cred-id in wallet: ")
+
+                    send_present_req = {
+                        "requested_predicates": {},
+                        "self_attested_attributes": {},
+                        "requested_attributes": {
+                            "additionalProp1": {
+                                "revealed": True,
+                                "cred_id": cred_id
+                            }
+                        }
+                    }
+                    send_present_resp = await alice_agent.agent.admin_POST(
+                        '/present-proof/records/' + pres_ex_id + '/send-presentation', send_present_req)
+                    log_msg("Proof presentation sent successfully.")
+                    log_json(send_present_resp)
                 except Exception as e:
                     log_msg("Something went wrong. Error: {}".format(str(e)))
         if alice_agent.show_timing:

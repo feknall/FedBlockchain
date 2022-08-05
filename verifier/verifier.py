@@ -1,33 +1,34 @@
 import asyncio
+import datetime
 import json
 import logging
 import os
 import sys
 import time
-import datetime
 
 from aiohttp import ClientError
 from qrcode import QRCode
 
+from base.support.utils import log_json
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from runners.agent_container import (  # noqa:E402
+from base.agent_container import (  # noqa:E402
     arg_parser,
     create_agent_with_args,
     AriesAgent,
 )
-from runners.support.agent import (  # noqa:E402
+from base.support.agent import (  # noqa:E402
     CRED_FORMAT_INDY,
     CRED_FORMAT_JSON_LD,
     SIG_TYPE_BLS,
 )
-from runners.support.utils import (  # noqa:E402
+from base.support.utils import (  # noqa:E402
     log_msg,
     log_status,
     prompt,
     prompt_loop,
 )
-
 
 CRED_PREVIEW_TYPE = "https://didcomm.org/issue-credential/2.0/credential-preview"
 SELF_ATTESTED = os.getenv("SELF_ATTESTED")
@@ -39,14 +40,14 @@ LOGGER = logging.getLogger(__name__)
 
 class FaberAgent(AriesAgent):
     def __init__(
-        self,
-        ident: str,
-        http_port: int,
-        admin_port: int,
-        no_auto: bool = False,
-        endorser_role: str = None,
-        revocation: bool = False,
-        **kwargs,
+            self,
+            ident: str,
+            http_port: int,
+            admin_port: int,
+            no_auto: bool = False,
+            endorser_role: str = None,
+            revocation: bool = False,
+            **kwargs,
     ):
         super().__init__(
             ident,
@@ -172,7 +173,7 @@ class FaberAgent(AriesAgent):
             raise Exception(f"Error invalid AIP level: {self.aip}")
 
     def generate_proof_request_web_request(
-        self, aip, cred_type, revocation, exchange_tracing, connectionless=False
+            self, aip, cred_type, revocation, exchange_tracing, connectionless=False
     ):
         age = 18
         d = datetime.date.today()
@@ -402,13 +403,10 @@ async def main(args):
             endorser_role=faber_agent.endorser_role,
         )
 
-        faber_schema_name = "degree schema"
+        faber_schema_name = "personal schema"
         faber_schema_attrs = [
             "name",
-            "date",
-            "degree",
-            "birthdate_dateint",
-            "timestamp",
+            "cin_number"
         ]
         if faber_agent.cred_type == CRED_FORMAT_INDY:
             faber_agent.public_did = True
@@ -427,9 +425,9 @@ async def main(args):
             raise Exception("Invalid credential type:" + faber_agent.cred_type)
 
         # generate an invitation for Alice
-        await faber_agent.generate_invitation(
-            display_qr=True, reuse_connections=faber_agent.reuse_connections, wait=True
-        )
+        # await faber_agent.generate_invitation(
+        #     display_qr=True, reuse_connections=faber_agent.reuse_connections, wait=True
+        # )
 
         exchange_tracing = False
         options = (
@@ -441,6 +439,14 @@ async def main(args):
         )
         if faber_agent.revocation:
             options += "    (5) Revoke Credential\n" "    (6) Publish Revocations\n"
+        options += "    (7) See Issue Credentials\n"
+        options += "    (8) Send Offer for a Proposed Credential\n"
+        options += "    (9) Issue a Credential for a Credential Request\n"
+        options += "    (10) Create a Local DID\n"
+        options += "    (11) Accept a Connection Request\n"
+        options += "    (12) See Credentials in Wallet\n"
+        options += "    (13) See Proof Records\n"
+        options += "    (14) Verify a Proof Presentation\n"
         if faber_agent.endorser_role and faber_agent.endorser_role == "author":
             options += "    (D) Set Endorser's DID\n"
         if faber_agent.multitenant:
@@ -545,53 +551,79 @@ async def main(args):
                     raise Exception(f"Error invalid AIP level: {faber_agent.aip}")
 
             elif option == "2":
-                log_status("#20 Request proof of degree from alice")
-                if faber_agent.aip == 10:
-                    proof_request_web_request = (
-                        faber_agent.agent.generate_proof_request_web_request(
-                            faber_agent.aip,
-                            faber_agent.cred_type,
-                            faber_agent.revocation,
-                            exchange_tracing,
-                        )
-                    )
-                    await faber_agent.agent.admin_POST(
-                        "/present-proof/send-request", proof_request_web_request
-                    )
-                    pass
+                try:
+                    log_status("#20 Request proof of degree from alice")
+                    req_attr_list = [{"name": "name"}, {"name": "cin_number"}]
 
-                elif faber_agent.aip == 20:
-                    if faber_agent.cred_type == CRED_FORMAT_INDY:
-                        proof_request_web_request = (
-                            faber_agent.agent.generate_proof_request_web_request(
-                                faber_agent.aip,
-                                faber_agent.cred_type,
-                                faber_agent.revocation,
-                                exchange_tracing,
-                            )
-                        )
+                    proof_request = {
+                        "name": "Proof of Personal Information",
+                        "version": "1.0",
+                        "requested_attributes": {
+                            f"additionalProp1": {
+                                "name": "name"
+                            }
+                        },
+                        "requested_predicates": {
+                        },
+                    }
 
-                    elif faber_agent.cred_type == CRED_FORMAT_JSON_LD:
-                        proof_request_web_request = (
-                            faber_agent.agent.generate_proof_request_web_request(
-                                faber_agent.aip,
-                                faber_agent.cred_type,
-                                faber_agent.revocation,
-                                exchange_tracing,
-                            )
-                        )
+                    present_proof_req = {
+                        "comment": "a random string",
+                        "connection_id": faber_agent.agent.connection_id,
+                        "proof_request": proof_request
+                    }
 
-                    else:
-                        raise Exception(
-                            "Error invalid credential type:" + faber_agent.cred_type
-                        )
-
-                    await agent.admin_POST(
-                        "/present-proof-2.0/send-request", proof_request_web_request
-                    )
-
-                else:
-                    raise Exception(f"Error invalid AIP level: {faber_agent.aip}")
+                    proof_resp = await faber_agent.agent.admin_POST("/present-proof/send-request", present_proof_req)
+                    log_msg("Proof request sent successfully.")
+                    log_json(proof_resp)
+                except Exception as e:
+                    log_msg("Something went wrong. error: {}".format(e))
+                # if faber_agent.aip == 10:
+                #     proof_request_web_request = (
+                #         faber_agent.agent.generate_proof_request_web_request(
+                #             faber_agent.aip,
+                #             faber_agent.cred_type,
+                #             faber_agent.revocation,
+                #             exchange_tracing,
+                #         )
+                #     )
+                #     await faber_agent.agent.admin_POST(
+                #         "/present-proof/send-request", proof_request_web_request
+                #     )
+                #     pass
+                #
+                # elif faber_agent.aip == 20:
+                #     if faber_agent.cred_type == CRED_FORMAT_INDY:
+                #         proof_request_web_request = (
+                #             faber_agent.agent.generate_proof_request_web_request(
+                #                 faber_agent.aip,
+                #                 faber_agent.cred_type,
+                #                 faber_agent.revocation,
+                #                 exchange_tracing,
+                #             )
+                #         )
+                #
+                #     elif faber_agent.cred_type == CRED_FORMAT_JSON_LD:
+                #         proof_request_web_request = (
+                #             faber_agent.agent.generate_proof_request_web_request(
+                #                 faber_agent.aip,
+                #                 faber_agent.cred_type,
+                #                 faber_agent.revocation,
+                #                 exchange_tracing,
+                #             )
+                #         )
+                #
+                #     else:
+                #         raise Exception(
+                #             "Error invalid credential type:" + faber_agent.cred_type
+                #         )
+                #
+                #     await agent.admin_POST(
+                #         "/present-proof-2.0/send-request", proof_request_web_request
+                #     )
+                #
+                # else:
+                #     raise Exception(f"Error invalid AIP level: {faber_agent.aip}")
 
             elif option == "2a":
                 log_status("#20 Request * Connectionless * proof of degree from alice")
@@ -610,15 +642,15 @@ async def main(args):
                     )
                     pres_req_id = proof_request["presentation_exchange_id"]
                     url = (
-                        os.getenv("WEBHOOK_TARGET")
-                        or (
-                            "http://"
-                            + os.getenv("DOCKERHOST").replace(
-                                "{PORT}", str(faber_agent.agent.admin_port + 1)
-                            )
-                            + "/webhooks"
-                        )
-                    ) + f"/pres_req/{pres_req_id}/"
+                                  os.getenv("WEBHOOK_TARGET")
+                                  or (
+                                          "http://"
+                                          + os.getenv("DOCKERHOST").replace(
+                                      "{PORT}", str(faber_agent.agent.admin_port + 1)
+                                  )
+                                          + "/webhooks"
+                                  )
+                          ) + f"/pres_req/{pres_req_id}/"
                     log_msg(f"Proof request url: {url}")
                     qr = QRCode(border=1)
                     qr.add_data(url)
@@ -658,13 +690,13 @@ async def main(args):
                     )
                     pres_req_id = proof_request["pres_ex_id"]
                     url = (
-                        "http://"
-                        + os.getenv("DOCKERHOST").replace(
-                            "{PORT}", str(faber_agent.agent.admin_port + 1)
-                        )
-                        + "/webhooks/pres_req/"
-                        + pres_req_id
-                        + "/"
+                            "http://"
+                            + os.getenv("DOCKERHOST").replace(
+                        "{PORT}", str(faber_agent.agent.admin_port + 1)
+                    )
+                            + "/webhooks/pres_req/"
+                            + pres_req_id
+                            + "/"
                     )
                     log_msg(f"Proof request url: {url}")
                     qr = QRCode(border=1)
@@ -688,18 +720,23 @@ async def main(args):
                     "Creating a new invitation, please receive "
                     "and accept this invitation using Alice agent"
                 )
-                await faber_agent.generate_invitation(
-                    display_qr=True,
-                    reuse_connections=faber_agent.reuse_connections,
-                    wait=True,
+                invi_rec = await faber_agent.agent.admin_POST("/connections/create-invitation")
+                log_msg(
+                    json.dumps(invi_rec["invitation"]), label="Invitation Data:", color=None
                 )
+                faber_agent.agent.connection_id = invi_rec["connection_id"]
+                # await faber_agent.generate_invitation(
+                #     display_qr=True,
+                #     reuse_connections=faber_agent.reuse_connections,
+                #     wait=True,
+                # )
 
             elif option == "5" and faber_agent.revocation:
                 rev_reg_id = (await prompt("Enter revocation registry ID: ")).strip()
                 cred_rev_id = (await prompt("Enter credential revocation ID: ")).strip()
                 publish = (
-                    await prompt("Publish now? [Y/N]: ", default="N")
-                ).strip() in "yY"
+                              await prompt("Publish now? [Y/N]: ", default="N")
+                          ).strip() in "yY"
                 try:
                     await faber_agent.agent.admin_POST(
                         "/revocation/revoke",
@@ -713,8 +750,8 @@ async def main(args):
                             "comment": "Revocation reason goes here ...",
                         },
                     )
-                except ClientError:
-                    pass
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
 
             elif option == "6" and faber_agent.revocation:
                 try:
@@ -730,7 +767,87 @@ async def main(args):
                     )
                 except ClientError:
                     pass
+            elif option == "7":
+                try:
+                    resp = await faber_agent.agent.admin_GET("/issue-credential/records")
+                    log_json(resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
 
+            elif option == "8":
+                try:
+                    cred_exchange_id = await prompt("Enter cred-exchange-id: ")
+                    get_cred_resp = await faber_agent.agent.admin_GET("/issue-credential/records/" + cred_exchange_id)
+                    log_json(get_cred_resp)
+
+                    confirm = await prompt("Confirm (Yes/No)? ")
+                    if confirm.lower() == "yes":
+                        send_offer_resp = await faber_agent.agent.admin_POST(
+                            "/issue-credential/records/" + cred_exchange_id + "/send-offer")
+                        faber_agent.agent.log("Offer sent successfully.")
+                        log_json(send_offer_resp)
+                except Exception:
+                    pass
+            elif option == "9":
+                try:
+                    cred_exchange_id = await prompt("Enter cred-exchange-id: ")
+                    get_cred_resp = await faber_agent.agent.admin_GET("/issue-credential/records/" + cred_exchange_id)
+                    log_json(get_cred_resp)
+
+                    confirm = await prompt("Confirm (Yes/No)? ")
+                    if confirm.lower() == "yes":
+                        issue_resp = await faber_agent.agent.admin_POST(
+                            "/issue-credential/records/" + cred_exchange_id + "/issue", {"comment": "hello world!"})
+                        faber_agent.agent.log("Credential issued successfully.")
+                        log_json(issue_resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "10":
+                try:
+                    create_local_did_req = {
+                        "method": "sov",
+                        "options": {
+                            "key_type": "ed25519"
+                        }
+                    }
+                    resp = await faber_agent.agent.admin_POST('/wallet/did/create', create_local_did_req)
+                    log_json(resp)
+                except ClientError:
+                    pass
+            elif option == "11":
+                try:
+                    resp = await faber_agent.agent.admin_POST(
+                        '/connections/' + faber_agent.agent.connection_id + '/accept-request')
+                    log_msg("Connection requested accepted successfully.")
+                    log_json(resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "12":
+                try:
+                    resp = await faber_agent.agent.admin_GET('/credentials')
+                    log_msg("Credentials read successfully.")
+                    log_json(resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "13":
+                try:
+                    present_proof_rec_resp = await faber_agent.agent.admin_GET('/present-proof/records')
+                    log_msg("Present proof records read successfully.")
+                    log_json(present_proof_rec_resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "14":
+                try:
+                    present_proof_rec_resp = await faber_agent.agent.admin_GET('/present-proof/records')
+                    log_msg("Present proof records read successfully.")
+                    log_json(present_proof_rec_resp)
+
+                    pres_ex_id = await prompt("Enter pres-ex-id: ")
+                    verify_resp = await faber_agent.agent.admin_POST(
+                        '/present-proof/records/' + pres_ex_id + '/verify-presentation')
+                    log_msg(verify_resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
         if faber_agent.show_timing:
             timing = await faber_agent.agent.fetch_timing()
             if timing:
@@ -747,7 +864,7 @@ async def main(args):
 
 
 if __name__ == "__main__":
-    parser = arg_parser(ident="faber", port=8020)
+    parser = arg_parser(ident="faber", port=8040)
     args = parser.parse_args()
 
     ENABLE_PYDEVD_PYCHARM = os.getenv("ENABLE_PYDEVD_PYCHARM", "").lower()
