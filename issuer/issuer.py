@@ -445,6 +445,8 @@ async def main(args):
         options += "    (10) Create a Local DID\n"
         options += "    (11) Accept a Connection Request\n"
         options += "    (12) See Credentials in Wallet\n"
+        options += "    (15) List Wallet DIDs\n"
+        options += "    (16) Fetch the Current Public DID\n"
         if faber_agent.endorser_role and faber_agent.endorser_role == "author":
             options += "    (D) Set Endorser's DID\n"
         if faber_agent.multitenant:
@@ -748,6 +750,9 @@ async def main(args):
 
             elif option == "8":
                 try:
+                    resp = await faber_agent.agent.admin_GET("/issue-credential/records")
+                    log_json(resp)
+
                     cred_exchange_id = await prompt("Enter cred-exchange-id: ")
                     get_cred_resp = await faber_agent.agent.admin_GET("/issue-credential/records/" + cred_exchange_id)
                     log_json(get_cred_resp)
@@ -801,7 +806,20 @@ async def main(args):
                     log_json(resp)
                 except Exception as e:
                     log_msg("Something went wrong. Error: {}".format(str(e)))
-
+            elif option == "15":
+                try:
+                    wallet_did_resp = await faber_agent.agent.admin_GET('/wallet/did')
+                    log_msg("Wallet DIDs read successfully.")
+                    log_json(wallet_did_resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "16":
+                try:
+                    wallet_did_public_resp = await faber_agent.agent.admin_GET('/wallet/did/public')
+                    log_msg("Wallet DIDs public read successfully.")
+                    log_json(wallet_did_public_resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
         if faber_agent.show_timing:
             timing = await faber_agent.agent.fetch_timing()
             if timing:

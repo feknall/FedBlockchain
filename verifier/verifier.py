@@ -447,6 +447,8 @@ async def main(args):
         options += "    (12) See Credentials in Wallet\n"
         options += "    (13) See Proof Records\n"
         options += "    (14) Verify a Proof Presentation\n"
+        options += "    (15) List Wallet DIDs\n"
+        options += "    (16) Fetch the Current Public DID\n"
         if faber_agent.endorser_role and faber_agent.endorser_role == "author":
             options += "    (D) Set Endorser's DID\n"
         if faber_agent.multitenant:
@@ -559,8 +561,11 @@ async def main(args):
                         "name": "Proof of Personal Information",
                         "version": "1.0",
                         "requested_attributes": {
-                            f"additionalProp1": {
+                            "additionalProp1": {
                                 "name": "name"
+                            },
+                            "additionalProp2": {
+                                "name": "cin_number"
                             }
                         },
                         "requested_predicates": {
@@ -846,6 +851,20 @@ async def main(args):
                     verify_resp = await faber_agent.agent.admin_POST(
                         '/present-proof/records/' + pres_ex_id + '/verify-presentation')
                     log_msg(verify_resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "15":
+                try:
+                    wallet_did_resp = await faber_agent.agent.admin_GET('/wallet/did')
+                    log_msg("Wallet DIDs read successfully.")
+                    log_json(wallet_did_resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "16":
+                try:
+                    wallet_did_public_resp = await faber_agent.agent.admin_GET('/wallet/did/public')
+                    log_msg("Wallet DIDs public read successfully.")
+                    log_json(wallet_did_public_resp)
                 except Exception as e:
                     log_msg("Something went wrong. Error: {}".format(str(e)))
         if faber_agent.show_timing:

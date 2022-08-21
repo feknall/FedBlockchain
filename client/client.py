@@ -153,7 +153,9 @@ async def main(args):
                   "    (11) Accept an Invitation\n" \
                   "    (12) See Credentials in Wallet\n" \
                   "    (13) See Proof Records\n" \
-                  "    (14) Send Presentation for a Present Proof\n"
+                  "    (14) Send Presentation for a Present Proof\n" \
+                  "    (15) List Wallet DIDs\n" \
+                  "    (16) Fetch the Current Public DID\n"
         if alice_agent.endorser_role and alice_agent.endorser_role == "author":
             options += "    (D) Set Endorser's DID\n"
         if alice_agent.multitenant:
@@ -318,6 +320,10 @@ async def main(args):
                             "additionalProp1": {
                                 "revealed": True,
                                 "cred_id": cred_id
+                            },
+                            "additionalProp2": {
+                                "revealed": True,
+                                "cred_id": cred_id
                             }
                         }
                     }
@@ -325,6 +331,20 @@ async def main(args):
                         '/present-proof/records/' + pres_ex_id + '/send-presentation', send_present_req)
                     log_msg("Proof presentation sent successfully.")
                     log_json(send_present_resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "15":
+                try:
+                    wallet_did_resp = await alice_agent.agent.admin_GET('/wallet/did')
+                    log_msg("Wallet DIDs read successfully.")
+                    log_json(wallet_did_resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "16":
+                try:
+                    wallet_did_public_resp = await alice_agent.agent.admin_GET('/wallet/did/public')
+                    log_msg("Wallet DIDs public read successfully.")
+                    log_json(wallet_did_public_resp)
                 except Exception as e:
                     log_msg("Something went wrong. Error: {}".format(str(e)))
         if alice_agent.show_timing:
