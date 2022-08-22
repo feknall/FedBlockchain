@@ -6,14 +6,16 @@ class ModelMetadata:
     secretsPerClient = None
     status = None
     trainingRounds = None
+    currentRound = None
 
-    def __init__(self, modelId, name, clientsPerRound, secretsPerClient, status, trainingRounds):
+    def __init__(self, modelId, name, clientsPerRound, secretsPerClient, status, trainingRounds, currentRound):
         self.modelId = modelId
         self.name = name
-        self.clients_per_round = clientsPerRound
-        self.secrets_per_client = secretsPerClient
+        self.clientsPerRound = clientsPerRound
+        self.secretsPerClient = secretsPerClient
         self.status = status
-        self.training_rounds = trainingRounds
+        self.trainingRounds = trainingRounds
+        self.currentRound = currentRound
 
     def to_map(self):
         return self.__dict__
@@ -36,12 +38,14 @@ class EndRoundModel:
 class ModelSecret:
     modelId = None
     round = None
-    weights = None
+    weights1 = None
+    weights2 = None
 
-    def __init__(self, modelId, round, weights):
+    def __init__(self, modelId, round, weights1, weights2):
         self.model_id = modelId
         self.round = round
-        self.weights = weights
+        self.weights1 = weights1
+        self.weights2 = weights2
 
     def to_map(self):
         return self.__dict__
@@ -62,10 +66,28 @@ class AggregatedSecret:
 
 
 class PersonalInfo:
+    clientId = None
     role = None
+    mspId = None
+    selectedForRound = None
+    checkedIn = None
 
-    def __init__(self, role):
+    def __init__(self, clientId, role, mspId, selectedForRound, checkedIn):
+        self.clientId = clientId
         self.role = role
+        self.selectedForRound = selectedForRound
+        self.mspId = mspId
+        self.checkedIn = checkedIn
 
     def to_map(self):
         return self.__dict__
+
+
+class TrainerMetadata:
+    clientId = None
+    checkedInTimestamp = None
+    roundSelectedFor = None
+
+    def __init__(self, clientId, checkedInTimestamp):
+        self.clientId = clientId
+        self.checkedInTimestamp = checkedInTimestamp

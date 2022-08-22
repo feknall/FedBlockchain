@@ -1,5 +1,8 @@
+import json
+import base64
 import requests
-from dto import ModelSecret, ModelMetadata, EndRoundModel, AggregatedSecret, PersonalInfo
+
+from rest.dto import ModelSecret, ModelMetadata, EndRoundModel, AggregatedSecret, PersonalInfo
 base_url = 'http://localhost:8080'
 
 
@@ -42,7 +45,12 @@ def read_model_secrets(model_id: str, round: str):
 
 
 def add_model_secret(body: ModelSecret):
-    response = requests.post(base_url + '/user/addModelSecret', json=body.to_map())
+    response = requests.post(base_url + '/trainer/addModelSecret', json=body.to_map())
+    print(response)
+
+
+def check_in_trainer():
+    response = requests.post(base_url + '/trainer/checkInTrainer')
     print(response)
 
 
@@ -55,9 +63,18 @@ def read_end_round_model(model_id: str, round: str):
     print(response)
 
 
-def get_role_in_certificate():
-    response = requests.get(base_url + '/general/getRoleInCertificate')
-    print(response)
+def get_personal_info():
+    resp = requests.get(base_url + '/general/getPersonalInfo')
+    content = resp.content
+    a_list = json.loads(content.decode())
+    print(a_list)
+    personal_info_str_1 = json.loads(base64.b64decode(a_list[0]))
+    personal_info_1 = PersonalInfo(**personal_info_str_1)
+
+    personal_info_str_2 = json.loads(base64.b64decode(a_list[1]))
+    personal_info_2 = PersonalInfo(**personal_info_str_2)
+
+    return personal_info_1, personal_info_2
 
 
 def get_trained_model(model_id: str):
@@ -66,3 +83,4 @@ def get_trained_model(model_id: str):
     }
     response = requests.get(base_url + '/general/getTrainedModel', params=params)
     print(response)
+

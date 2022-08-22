@@ -4,7 +4,7 @@ class Config:
     S = {}
     check = False
     number_of_clients = 2
-    num_servers = 3
+    num_servers = 2
     stop_receive_blocks = False
     count_sum = 0
     training_rounds = 10
@@ -23,8 +23,7 @@ class Config:
 
 
 class ClientConfig(Config):
-    def __init__(self, client_index):
-        self.client_index = client_index
+    pass
 
 
 class ServerConfig(Config):

@@ -4,7 +4,7 @@ from tensorflow.keras.layers import (Dense)
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.utils import to_categorical
 
-import flcommon
+from fl import flcommon
 
 
 def load_train_dataset(n_clients=3, permute=False):

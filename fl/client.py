@@ -3,12 +3,12 @@
 # follow the prompts appearing each time.
 
 import pickle
-import flevents
 import sys
 
 import numpy as np
 
 import flcommon
+import flevents
 import mnist_common
 from config import ClientConfig
 
@@ -31,8 +31,7 @@ def connect_to_servers():
 
 def start_next_round(training_round, round_weight):
     # Each client train a model
-    x_train, y_train = client_datasets[config.client_index][0][(training_round * LD):(training_round * LD) + LD], \
-                       client_datasets[config.client_index][1][(training_round * LD):(training_round * LD) + LD]
+    x_train, y_train = client_datasets[config.client_index][0], client_datasets[config.client_index][1]
 
     model = mnist_common.get_model(flcommon.input_shape)
     if training_round != 0:
@@ -109,5 +108,6 @@ def start_client():
         print(f"[CLIENT] Response of master received. len(data): {len(data)}")
         round_weight = pickle.loads(b"".join(data))
         print(f"[SERVER] Secret opened successfully.")
+
 
 start_client()
