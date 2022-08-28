@@ -8,7 +8,7 @@ class ModelMetadata:
     trainingRounds = None
     currentRound = None
 
-    def __init__(self, modelId, name, clientsPerRound, secretsPerClient, status, trainingRounds, currentRound):
+    def __init__(self, modelId, name, clientsPerRound, secretsPerClient, trainingRounds, status=None, currentRound=None):
         self.modelId = modelId
         self.name = name
         self.clientsPerRound = clientsPerRound
@@ -16,6 +16,7 @@ class ModelMetadata:
         self.status = status
         self.trainingRounds = trainingRounds
         self.currentRound = currentRound
+
 
     def to_map(self):
         return self.__dict__
@@ -42,7 +43,7 @@ class ModelSecret:
     weights2 = None
 
     def __init__(self, modelId, round, weights1, weights2):
-        self.model_id = modelId
+        self.modelId = modelId
         self.round = round
         self.weights1 = weights1
         self.weights2 = weights2
@@ -67,13 +68,15 @@ class AggregatedSecret:
 
 class PersonalInfo:
     clientId = None
+    username = None
     role = None
     mspId = None
     selectedForRound = None
     checkedIn = None
 
-    def __init__(self, clientId, role, mspId, selectedForRound, checkedIn):
+    def __init__(self, clientId, username, role, mspId, checkedIn, selectedForRound=None):
         self.clientId = clientId
+        self.username = username
         self.role = role
         self.selectedForRound = selectedForRound
         self.mspId = mspId
@@ -87,7 +90,10 @@ class TrainerMetadata:
     clientId = None
     checkedInTimestamp = None
     roundSelectedFor = None
+    username = None
 
-    def __init__(self, clientId, checkedInTimestamp):
+    def __init__(self, clientId, checkedInTimestamp, username, roundSelectedFor):
         self.clientId = clientId
         self.checkedInTimestamp = checkedInTimestamp
+        self.username = username
+        self.roundSelectedFor = roundSelectedFor

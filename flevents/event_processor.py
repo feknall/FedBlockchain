@@ -1,27 +1,19 @@
-import asyncio
+
 import json
 import pickle
+import threading
 
+import base64
 import numpy as np
-import websockets
 
+
+from base.support.utils import log_msg, log_json
 from fl import flcommon
 from fl import mnist_common
 from fl.config import ClientConfig
-from info_pb2 import Event
-from rest import gateway_rest_api
+
 from rest.dto import ModelMetadata, ModelSecret, TrainerMetadata
 
-WEBSOCKET_ADDRESS = 'ws://localhost:8080'
-
-ALL_SECRETS_RECEIVED_EVENT = "ALL_SECRETS_RECEIVED_EVENT"
-AGGREGATION_FINISHED_EVENT = "AGGREGATION_FINISHED_EVENT"
-ROUND_FINISHED_EVENT = "ROUND_FINISHED_EVENT"
-ROUND_AND_TRAINING_FINISHED_EVENT = "ROUND_AND_TRAINING_FINISHED_EVENT"
-MODEL_SECRET_ADDED_EVENT = "MODEL_SECRET_ADDED_EVENT"
-CREATE_MODEL_METADATA_EVENT = "CREATE_MODEL_METADATA_EVENT"
-START_TRAINING_EVENT = "START_TRAINING_EVENT"
-CLIENT_SELECTED_FOR_ROUND_EVENT = "CLIENT_SELECTED_FOR_ROUND_EVENT"
 
 config = ClientConfig()
 client_datasets = mnist_common.load_train_dataset(config.number_of_clients, permute=True)
@@ -36,11 +28,13 @@ class EventProcessor:
     clientIndex = None
     roundWeight = None
     roundSelectedFor = None
+    gateway_rest_api = None
 
-    def __init__(self, client_id_1, client_id_2, client_index):
+    def __init__(self, client_id_1, client_id_2, client_index, gateway_rest_api):
         self.clientId1 = client_id_1
         self.clientId2 = client_id_2
         self.clientIndex = client_index
+        self.gateway_rest_api = gateway_rest_api
 
     def all_secrets_received(self, event_payload):
         # Aggregator
@@ -67,7 +61,7 @@ class EventProcessor:
     def create_model_metadata(self, event_payload):
         x = json.loads(event_payload)
         metadata = ModelMetadata(**x)
-        print(f"A model is created. modelId: {metadata.modelId}")
+        log_msg(f"EVENT: A model is created. modelId: {metadata.modelId}")
 
         self.modelId = metadata.modelId
         self.secretsPerClient = metadata.secretsPerClient
@@ -75,24 +69,24 @@ class EventProcessor:
 
     def start_training_event(self, event_payload):
         # Client
-        x = json.load(event_payload)
+        x = json.loads(event_payload)
         metadata = ModelMetadata(**x)
-        print(f"A model training started. modelId: {metadata.modelId}")
+        log_msg(f"EVENT: A model training started. modelId: {metadata.modelId}")
 
     def client_selected_for_round_event(self, event_payload):
-        x = json.load(event_payload)
+        x = json.loads(event_payload)
         metadata = TrainerMetadata(**x)
-        print(f"A client is selected for training. clientId: {metadata.clientId}")
+        log_msg(f"EVENT: A client is selected for training. clientId: {metadata.clientId}")
 
         if metadata.clientId != self.clientId1 and metadata.clientId != self.clientId2:
-            print("Ignoring...")
+            log_msg("Ignoring...")
             return
 
         self.roundSelectedFor = metadata.roundSelectedFor
 
-        print(f"Start training...")
+        log_msg(f"Start training...")
 
-        x_train, y_train = client_datasets[self.clientIndex][0], client_datasets[self.clientIndex][1]
+        x_train, y_train = client_datasets[self.clientIndex][0][:100], client_datasets[self.clientIndex][1][:100]
         model = mnist_common.get_model(flcommon.input_shape)
 
         if self.roundSelectedFor > 0:
@@ -131,66 +125,23 @@ class EventProcessor:
             for layer_index in range(len(shares_dict)):
                 all_servers[server_index][layer_index] = shares_dict[layer_index][server_index]
 
-        weights1 = pickle.dumps(all_servers[0])
-        weights2 = pickle.dumps(all_servers[1])
+        weights1 = str(base64.b64encode(pickle.dumps(all_servers[0])))
+        weights2 = str(base64.b64encode(pickle.dumps(all_servers[1])))
 
         model_secret = ModelSecret(self.modelId, self.roundSelectedFor, weights1, weights2)
-        gateway_rest_api.add_model_secret(model_secret)
+        self.gateway_rest_api.add_model_secret(model_secret)
 
         print("Secrets are sent.")
 
         print(f"Round {self.roundSelectedFor} completed.")
         print("Waiting...")
 
+# ------------------ Begin Client Check In ------------------
 
-personal_info_1, personal_info_2 = gateway_rest_api.get_personal_info()
-client_index = "1"
-processor = EventProcessor(personal_info_1.clientId, personal_info_2.clientId, client_index)
+# ------------------ End Client Check In ------------------
 
-# ------------------ Client Check In ------------------
-
-
-async def periodic():
-    while True:
-        print('Checking-in...')
-        gateway_rest_api.check_in_trainer()
-        await asyncio.sleep(30)
-
-loop = asyncio.get_event_loop()
-task = loop.create_task(periodic())
-try:
-    loop.run_forever()
-except Exception as e:
-    print("Something went wrong", repr(e))
+# ------------------ Begin Process Socket Events ------------------
 
 
 # ------------------ Client Check In ------------------
 
-
-async def process_socket_events():
-    async with websockets.connect(WEBSOCKET_ADDRESS) as websocket:
-        async for message in websocket:
-            event = Event()
-            event.ParseFromString(message)
-            print(event)
-            event_name = event.name
-            event_payload = event.payload
-            if event_name == ALL_SECRETS_RECEIVED_EVENT:
-                processor.all_secrets_received(event_payload)
-            elif event_name == AGGREGATION_FINISHED_EVENT:
-                processor.aggregation_finished(event_payload)
-            elif event_name == ROUND_FINISHED_EVENT:
-                processor.round_finished(event_payload)
-            elif event_name == ROUND_AND_TRAINING_FINISHED_EVENT:
-                processor.round_and_training_finished(event_payload)
-            elif event_name == MODEL_SECRET_ADDED_EVENT:
-                processor.model_secret_added(event_payload)
-            elif event_name == CREATE_MODEL_METADATA_EVENT:
-                processor.create_model_metadata(event_payload)
-            elif event_name == START_TRAINING_EVENT:
-                processor.start_training_event(event_payload)
-            elif event_name == CLIENT_SELECTED_FOR_ROUND_EVENT:
-                processor.client_selected_for_round_event(event_payload)
-
-
-asyncio.run(process_socket_events())

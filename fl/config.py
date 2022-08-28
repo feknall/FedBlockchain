@@ -8,7 +8,7 @@ class Config:
     stop_receive_blocks = False
     count_sum = 0
     training_rounds = 10
-    epochs = 3
+    epochs = 1
     batch_size = 16
     verbose = 1
     validation_split = 0.1
