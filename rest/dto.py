@@ -36,20 +36,48 @@ class EndRoundModel:
         return self.__dict__
 
 
-class ModelSecret:
+class ModelSecretRequest:
     modelId = None
-    round = None
     weights1 = None
     weights2 = None
 
-    def __init__(self, modelId, round, weights1, weights2):
+    def __init__(self, modelId, weights1=None, weights2=None):
         self.modelId = modelId
-        self.round = round
         self.weights1 = weights1
         self.weights2 = weights2
 
     def to_map(self):
         return self.__dict__
+
+
+class ModelSecretResponse:
+    modelId = None
+    round = None
+
+    # This if for response
+    weights = None
+
+    def __init__(self, modelId, round, weights=None):
+        self.modelId = modelId
+        self.round = round
+        self.weights = weights
+
+    def to_map(self):
+        return self.__dict__
+
+
+class ModelSecretList:
+    modelSecretList = None
+
+    def __init__(self, modelSecretList):
+        self.modelSecretList = modelSecretList
+
+
+class CheckInList:
+    checkedInTrainers = None
+
+    def __init__(self, checkedInTrainers):
+        self.checkedInTrainers = checkedInTrainers
 
 
 class AggregatedSecret:

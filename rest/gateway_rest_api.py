@@ -3,7 +3,8 @@ import base64
 import requests
 
 from base.support.utils import log_json, log_msg
-from rest.dto import ModelSecret, ModelMetadata, EndRoundModel, AggregatedSecret, PersonalInfo 
+from rest.dto import ModelSecretRequest, ModelSecretResponse, ModelMetadata, EndRoundModel, AggregatedSecret, \
+    PersonalInfo, ModelSecretList
 
 
 class GatewayRestApi:
@@ -55,21 +56,49 @@ class GatewayRestApi:
             'model_id': model_id,
             'round': round
         }
-        response = requests.post(self.base_url + '/leadAggregator/readAggregatedModelUpdate', params=params)
-    
+        resp = requests.post(self.base_url + '/leadAggregator/readAggregatedModelUpdate', params=params)
+        # content = resp.content.decode()
+        # model_secret = ModelSecretResponse(**json.loads(content))
+        # log_msg(model_secret.modelId)
+
     def add_aggregated_secret(self, body: AggregatedSecret):
         response = requests.post(self.base_url + '/aggregator/addAggregatedSecret', json=body.to_map())
         print(response)
-    
-    def read_model_secrets(self, model_id: str, round: str):
+
+    def get_model_secrets_for_current_round(self, model_id: str):
+        log_msg("Sending reading model secrets for current round...")
+        log_msg("Request /admin/readModelSecretsForCurrentRound")
+
         params = {
-            'model_id': model_id,
+            'modelId': model_id
+        }
+        resp = requests.get(self.base_url + '/aggregator/readModelSecretsForCurrentRound', params=params)
+        log_msg(resp)
+
+        content = resp.content.decode()
+        a_list = json.loads(content)
+
+        model_secret_list = ModelSecretList(**a_list)
+        for item in model_secret_list.modelSecretList:
+            secret = ModelSecretResponse(**item)
+            log_msg("Has weight? YES" if secret.weights is not None else "Has weight? NO")
+            log_msg(f"Model Id: {secret.modelId}")
+
+    def get_selected_trainers_for_current_round(self):
+        log_msg("Get selected trainers for current round...")
+        log_msg("Request")
+
+        resp = requests.get(self.base_url + '/general/getSelectedTrainersForCurrentRound')
+
+    def read_model_secrets(self, model_id: str):
+        params = {
+            'modelId': model_id,
             'round': round
         }
         response = requests.get(self.base_url + '/aggregator/readModelSecrets', params=params)
         print(response)
     
-    def add_model_secret(self, body: ModelSecret):
+    def add_model_secret(self, body: ModelSecretRequest):
         response = requests.post(self.base_url + '/trainer/addModelSecret', json=body.to_map())
         print(response)
     
@@ -111,7 +140,7 @@ class GatewayRestApi:
         }
         response = requests.get(self.base_url + '/general/getTrainedModel', params=params)
         print(response)
-    
+
     def check_has_aggregator_attribute(self):
         log_msg('Checking user has trainer attribute ...')
 
@@ -151,4 +180,16 @@ class GatewayRestApi:
         log_msg(f"Response: {content}")
 
         return content
-    
+
+    def check_i_am_selected_for_round(self):
+        log_msg("Get I am selected for round...")
+        log_msg("Request /general/checkIAmSelectedForRound")
+
+        resp = requests.get(self.base_url + '/general/checkIAmSelectedForRound')
+        content = resp.content.decode()
+        log_msg(f"Response: {content}")
+
+        if content == "true":
+            return True
+        else:
+            return False

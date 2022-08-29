@@ -7,7 +7,6 @@ from base.support.utils import log_msg
 from flevents.event_processor import EventProcessor
 from info_pb2 import Event
 
-WEBSOCKET_ADDRESS = 'ws://localhost:8080'
 
 ALL_SECRETS_RECEIVED_EVENT = "ALL_SECRETS_RECEIVED_EVENT"
 AGGREGATION_FINISHED_EVENT = "AGGREGATION_FINISHED_EVENT"
@@ -16,12 +15,12 @@ ROUND_AND_TRAINING_FINISHED_EVENT = "ROUND_AND_TRAINING_FINISHED_EVENT"
 MODEL_SECRET_ADDED_EVENT = "MODEL_SECRET_ADDED_EVENT"
 CREATE_MODEL_METADATA_EVENT = "CREATE_MODEL_METADATA_EVENT"
 START_TRAINING_EVENT = "START_TRAINING_EVENT"
-CLIENT_SELECTED_FOR_ROUND_EVENT = "CLIENT_SELECTED_FOR_ROUND_EVENT"
+ENOUGH_CLIENTS_CHECKED_IN_EVENT = "ENOUGH_CLIENTS_CHECKED_IN_EVENT"
 
 
-async def process_socket_events(processor: EventProcessor):
+async def process_socket_events(processor: EventProcessor, websocket_address):
     log_msg("Start listening to events...")
-    async with websockets.connect(WEBSOCKET_ADDRESS) as websocket:
+    async with websockets.connect(websocket_address) as websocket:
         async for message in websocket:
             event = Event()
             event.ParseFromString(message)
@@ -42,14 +41,13 @@ async def process_socket_events(processor: EventProcessor):
                 processor.create_model_metadata(event_payload)
             elif event_name == START_TRAINING_EVENT:
                 processor.start_training_event(event_payload)
-            elif event_name == CLIENT_SELECTED_FOR_ROUND_EVENT:
-                processor.client_selected_for_round_event(event_payload)
 
 
-def run(processor):
-    asyncio.run(process_socket_events(processor))
+
+def run(processor, websocket_address):
+    asyncio.run(process_socket_events(processor, websocket_address))
 
 
-def listen(processor: EventProcessor):
-    thread = threading.Thread(target=run, args=(processor,))
+def listen(processor: EventProcessor, websocket_address):
+    thread = threading.Thread(target=run, args=(processor, websocket_address))
     thread.start()

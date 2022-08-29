@@ -12,8 +12,8 @@ from fl import flcommon
 from fl import mnist_common
 from fl.config import ClientConfig
 
-from rest.dto import ModelMetadata, ModelSecret, TrainerMetadata
-
+from rest.dto import ModelMetadata, ModelSecretRequest, TrainerMetadata
+from rest.gateway_rest_api import GatewayRestApi
 
 config = ClientConfig()
 client_datasets = mnist_common.load_train_dataset(config.number_of_clients, permute=True)
@@ -27,10 +27,9 @@ class EventProcessor:
     trainingRounds = None
     clientIndex = None
     roundWeight = None
-    roundSelectedFor = None
     gateway_rest_api = None
 
-    def __init__(self, client_id_1, client_id_2, client_index, gateway_rest_api):
+    def __init__(self, client_id_1, client_id_2, client_index, gateway_rest_api: GatewayRestApi):
         self.clientId1 = client_id_1
         self.clientId2 = client_id_2
         self.clientIndex = client_index
@@ -38,9 +37,7 @@ class EventProcessor:
 
     def all_secrets_received(self, event_payload):
         # Aggregator
-        x = json.loads(event_payload)
-        model_secret = ModelSecret(**x)
-        print(model_secret.modelId)
+        pass
 
     def aggregation_finished(self, event_payload):
         # LeadAggregator
@@ -73,23 +70,22 @@ class EventProcessor:
         metadata = ModelMetadata(**x)
         log_msg(f"EVENT: A model training started. modelId: {metadata.modelId}")
 
-    def client_selected_for_round_event(self, event_payload):
-        x = json.loads(event_payload)
-        metadata = TrainerMetadata(**x)
-        log_msg(f"EVENT: A client is selected for training. clientId: {metadata.clientId}")
 
-        if metadata.clientId != self.clientId1 and metadata.clientId != self.clientId2:
-            log_msg("Ignoring...")
+class TrainerEventProcessor(EventProcessor):
+    roundCounter = 0
+
+    def start_training_event(self, event_payload):
+        client_is_selected = self.gateway_rest_api.check_i_am_selected_for_round()
+        if not client_is_selected:
+            log_msg("It's not my turn. Ignoring...")
             return
-
-        self.roundSelectedFor = metadata.roundSelectedFor
 
         log_msg(f"Start training...")
 
         x_train, y_train = client_datasets[self.clientIndex][0][:100], client_datasets[self.clientIndex][1][:100]
         model = mnist_common.get_model(flcommon.input_shape)
 
-        if self.roundSelectedFor > 0:
+        if self.roundWeight is not None:
             model.set_weights(self.roundWeight)
 
         model.fit(x_train, y_train, epochs=config.epochs, batch_size=config.batch_size, verbose=config.verbose,
@@ -128,14 +124,40 @@ class EventProcessor:
         weights1 = str(base64.b64encode(pickle.dumps(all_servers[0])))
         weights2 = str(base64.b64encode(pickle.dumps(all_servers[1])))
 
-        model_secret = ModelSecret(self.modelId, self.roundSelectedFor, weights1, weights2)
+        model_secret = ModelSecretRequest(self.modelId, weights1, weights2)
         self.gateway_rest_api.add_model_secret(model_secret)
 
-        print("Secrets are sent.")
 
-        print(f"Round {self.roundSelectedFor} completed.")
-        print("Waiting...")
+        log_msg("Secrets are sent.")
 
+        log_msg(f"Round {self.roundCounter} completed.")
+
+        self.roundCounter = self.roundCounter + 1
+        log_msg("Waiting...")
+
+
+class FlAdminEventProcessor(EventProcessor):
+    pass
+
+
+class LeadAggregatorEventProcessorR(EventProcessor):
+    pass
+
+
+class AggregatorEventProcessor(EventProcessor):
+
+    def all_secrets_received(self, event_payload):
+        x = json.loads(event_payload)
+        model_secret = ModelSecretRequest(**x)
+        log_msg(f"EVENT: All secrets of a model is received. modelId: {model_secret.modelId}")
+
+        self.gateway_rest_api.get_model_secrets_for_current_round(self.modelId)
+
+        # for layer_index in range(len(clients_secret[0])):
+        #     secrets_summation = np.zeros(shape=clients_secret[0][layer_index].shape)
+        #     for client_index in range(len(clients_secret)):
+        #         secrets_summation += clients_secret[client_index][layer_index]
+        #     model[layer_index] = secrets_summation
 # ------------------ Begin Client Check In ------------------
 
 # ------------------ End Client Check In ------------------
