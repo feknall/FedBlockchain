@@ -57,7 +57,7 @@ class ModelSecretResponse:
     # This if for response
     weights = None
 
-    def __init__(self, modelId, round, weights=None):
+    def __init__(self, modelId, round=None, weights=None):
         self.modelId = modelId
         self.round = round
         self.weights = weights
@@ -82,12 +82,10 @@ class CheckInList:
 
 class AggregatedSecret:
     modelId = None
-    round = None
     weights = None
 
-    def __init__(self, modelId, round, weights):
+    def __init__(self, modelId, weights):
         self.modelId = modelId
-        self.round = round
         self.weights = weights
 
     def to_map(self):

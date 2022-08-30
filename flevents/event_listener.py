@@ -8,7 +8,7 @@ from flevents.event_processor import EventProcessor
 from info_pb2 import Event
 
 
-ALL_SECRETS_RECEIVED_EVENT = "ALL_SECRETS_RECEIVED_EVENT"
+# ALL_SECRETS_RECEIVED_EVENT = "ALL_SECRETS_RECEIVED_EVENT"
 AGGREGATION_FINISHED_EVENT = "AGGREGATION_FINISHED_EVENT"
 ROUND_FINISHED_EVENT = "ROUND_FINISHED_EVENT"
 ROUND_AND_TRAINING_FINISHED_EVENT = "ROUND_AND_TRAINING_FINISHED_EVENT"
@@ -27,9 +27,7 @@ async def process_socket_events(processor: EventProcessor, websocket_address):
             print(event)
             event_name = event.name
             event_payload = event.payload
-            if event_name == ALL_SECRETS_RECEIVED_EVENT:
-                processor.all_secrets_received(event_payload)
-            elif event_name == AGGREGATION_FINISHED_EVENT:
+            if event_name == AGGREGATION_FINISHED_EVENT:
                 processor.aggregation_finished(event_payload)
             elif event_name == ROUND_FINISHED_EVENT:
                 processor.round_finished(event_payload)

@@ -1,5 +1,8 @@
 import json
 import base64
+import time
+from threading import Thread
+
 import requests
 
 from base.support.utils import log_json, log_msg
@@ -62,27 +65,39 @@ class GatewayRestApi:
         # log_msg(model_secret.modelId)
 
     def add_aggregated_secret(self, body: AggregatedSecret):
+        log_msg("Adding aggregated secret...")
+
+        req_addr = self.base_url + '/aggregator/addAggregatedSecret'
+        log_msg(f"Request address: {req_addr}")
+
         response = requests.post(self.base_url + '/aggregator/addAggregatedSecret', json=body.to_map())
         print(response)
 
     def get_model_secrets_for_current_round(self, model_id: str):
+        log_msg("Waiting 5 seconds for stupid reasons :)")
+        time.sleep(5)
         log_msg("Sending reading model secrets for current round...")
-        log_msg("Request /admin/readModelSecretsForCurrentRound")
+
+        req_addr = self.base_url + '/aggregator/readModelSecretsForCurrentRound'
+        log_msg(f"Request address: {req_addr}")
 
         params = {
             'modelId': model_id
         }
-        resp = requests.get(self.base_url + '/aggregator/readModelSecretsForCurrentRound', params=params)
+        log_msg(f"Request params: {params}")
+
+        resp = requests.get(req_addr, params=params)
         log_msg(resp)
-
         content = resp.content.decode()
-        a_list = json.loads(content)
+        model_secret_list = ModelSecretList(**json.loads(content))
 
-        model_secret_list = ModelSecretList(**a_list)
+        my_list = []
         for item in model_secret_list.modelSecretList:
             secret = ModelSecretResponse(**item)
             log_msg("Has weight? YES" if secret.weights is not None else "Has weight? NO")
             log_msg(f"Model Id: {secret.modelId}")
+            my_list.append(secret)
+        return my_list
 
     def get_selected_trainers_for_current_round(self):
         log_msg("Get selected trainers for current round...")
@@ -186,6 +201,21 @@ class GatewayRestApi:
         log_msg("Request /general/checkIAmSelectedForRound")
 
         resp = requests.get(self.base_url + '/general/checkIAmSelectedForRound')
+        content = resp.content.decode()
+        log_msg(f"Response: {content}")
+
+        if content == "true":
+            return True
+        else:
+            return False
+
+    def check_all_secrets_received(self, model_id: str):
+        log_msg("Check all secrets received...")
+        params = {
+            'modelId': model_id
+        }
+
+        resp = requests.get(self.base_url + '/aggregator/checkAllSecretsReceived', params=params)
         content = resp.content.decode()
         log_msg(f"Response: {content}")
 

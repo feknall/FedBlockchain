@@ -17,4 +17,6 @@ event_processor = AggregatorEventProcessor(client_id_1=personal_info_1.clientId,
 
 event_listener = event_listener.listen(event_processor, websocket_address)
 
+control_panel.check_in()
+control_panel.has_trainer_attribute()
 control_panel.get_personal_info()

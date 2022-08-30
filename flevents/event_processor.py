@@ -12,7 +12,7 @@ from fl import flcommon
 from fl import mnist_common
 from fl.config import ClientConfig
 
-from rest.dto import ModelMetadata, ModelSecretRequest, TrainerMetadata
+from rest.dto import ModelMetadata, ModelSecretRequest, TrainerMetadata, ModelSecretResponse, AggregatedSecret
 from rest.gateway_rest_api import GatewayRestApi
 
 config = ClientConfig()
@@ -121,8 +121,8 @@ class TrainerEventProcessor(EventProcessor):
             for layer_index in range(len(shares_dict)):
                 all_servers[server_index][layer_index] = shares_dict[layer_index][server_index]
 
-        weights1 = str(base64.b64encode(pickle.dumps(all_servers[0])))
-        weights2 = str(base64.b64encode(pickle.dumps(all_servers[1])))
+        weights1 = base64.b64encode(pickle.dumps(all_servers[0])).decode()
+        weights2 = base64.b64encode(pickle.dumps(all_servers[1])).decode()
 
         model_secret = ModelSecretRequest(self.modelId, weights1, weights2)
         self.gateway_rest_api.add_model_secret(model_secret)
@@ -146,18 +146,36 @@ class LeadAggregatorEventProcessorR(EventProcessor):
 
 class AggregatorEventProcessor(EventProcessor):
 
-    def all_secrets_received(self, event_payload):
+    def model_secret_added(self, event_payload):
         x = json.loads(event_payload)
-        model_secret = ModelSecretRequest(**x)
-        log_msg(f"EVENT: All secrets of a model is received. modelId: {model_secret.modelId}")
+        model_secret = ModelSecretResponse(**x)
+        log_msg(f"EVENT: A model secret is added. modelId: {model_secret.modelId}")
 
-        self.gateway_rest_api.get_model_secrets_for_current_round(self.modelId)
+        if not self.gateway_rest_api.check_all_secrets_received(self.modelId):
+            log_msg("Waiting for more secrets...")
+        log_msg("Aggregator is started :)")
 
-        # for layer_index in range(len(clients_secret[0])):
-        #     secrets_summation = np.zeros(shape=clients_secret[0][layer_index].shape)
-        #     for client_index in range(len(clients_secret)):
-        #         secrets_summation += clients_secret[client_index][layer_index]
-        #     model[layer_index] = secrets_summation
+        secrets = self.gateway_rest_api.get_model_secrets_for_current_round(self.modelId)
+
+        clients_secret = []
+        for secret in secrets:
+            clients_secret.append(pickle.loads(base64.b64decode(secret.weights)))
+
+        log_msg(f"Trying to aggregate {len(clients_secret)} secrets")
+
+        model = {}
+        for layer_index in range(len(clients_secret[0])):
+            secrets_summation = np.zeros(shape=clients_secret[0][layer_index].shape)
+            for client_index in range(len(clients_secret)):
+                secrets_summation += clients_secret[client_index][layer_index]
+            model[layer_index] = secrets_summation
+
+        log_msg("Aggregation finished successfully.")
+        model_byte = base64.b64encode(pickle.dumps(model)).decode()
+
+        aggregated_secret = AggregatedSecret(self.modelId, model_byte)
+        self.gateway_rest_api.add_aggregated_secret(aggregated_secret)
+
 # ------------------ Begin Client Check In ------------------
 
 # ------------------ End Client Check In ------------------
