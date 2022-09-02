@@ -12,7 +12,8 @@ from fl import flcommon
 from fl import mnist_common
 from fl.config import ClientConfig
 
-from rest.dto import ModelMetadata, ModelSecretRequest, TrainerMetadata, ModelSecretResponse, AggregatedSecret
+from rest.dto import ModelMetadata, ModelSecretRequest, TrainerMetadata, ModelSecretResponse, AggregatedSecret, \
+    EndRoundModel
 from rest.gateway_rest_api import GatewayRestApi
 
 config = ClientConfig()
@@ -69,6 +70,9 @@ class EventProcessor:
         x = json.loads(event_payload)
         metadata = ModelMetadata(**x)
         log_msg(f"EVENT: A model training started. modelId: {metadata.modelId}")
+
+    def aggregated_secret_added_event(self, event_payload):
+        pass
 
 
 class TrainerEventProcessor(EventProcessor):
@@ -127,7 +131,6 @@ class TrainerEventProcessor(EventProcessor):
         model_secret = ModelSecretRequest(self.modelId, weights1, weights2)
         self.gateway_rest_api.add_model_secret(model_secret)
 
-
         log_msg("Secrets are sent.")
 
         log_msg(f"Round {self.roundCounter} completed.")
@@ -140,19 +143,66 @@ class FlAdminEventProcessor(EventProcessor):
     pass
 
 
-class LeadAggregatorEventProcessorR(EventProcessor):
-    pass
+class LeadAggregatorEventProcessor(EventProcessor):
+    started = False
+
+    def aggregated_secret_added_event(self, event_payload):
+        if self.started:
+            log_msg("Already started. Ignoring...")
+            return
+
+        x = json.loads(event_payload)
+        model_secret = ModelSecretResponse(**x)
+        log_msg(f"EVENT: A aggregated secret for a model is added. modelId: {model_secret.modelId}")
+
+        if not self.gateway_rest_api.check_all_aggregated_secrets_received(self.modelId):
+            log_msg("Waiting for more aggregated secrets...")
+            return
+
+        self.started = True
+
+        log_msg("Lead aggregator is started :)")
+
+        aggregated_secrets = self.gateway_rest_api.get_aggregated_secrets_for_current_round(self.modelId)
+
+        decoded_aggregated_secrets = []
+        for aggregated_secret in aggregated_secrets:
+            decoded_aggregated_secrets.append(pickle.loads(base64.b64decode(aggregated_secret.weights)))
+
+        log_msg(f"Trying to aggregate {len(decoded_aggregated_secrets)} secrets")
+
+        model = {}
+        for layer_index in range(len(decoded_aggregated_secrets[0])):
+            aggregated_secrets_summation = np.zeros(shape=decoded_aggregated_secrets[0][layer_index].shape)
+            for client_index in range(len(decoded_aggregated_secrets)):
+                aggregated_secrets_summation += decoded_aggregated_secrets[client_index][layer_index]
+            model[layer_index] = aggregated_secrets_summation
+
+        log_msg("Lead aggregation finished successfully.")
+        model_byte = base64.b64encode(pickle.dumps(model)).decode()
+
+        end_round_model = EndRoundModel(self.modelId, model_byte)
+        self.gateway_rest_api.add_end_round_model(end_round_model)
 
 
 class AggregatorEventProcessor(EventProcessor):
+    started = False
 
     def model_secret_added(self, event_payload):
+        if self.started:
+            log_msg("Already started. Ignoring...")
+            return
+
         x = json.loads(event_payload)
         model_secret = ModelSecretResponse(**x)
         log_msg(f"EVENT: A model secret is added. modelId: {model_secret.modelId}")
 
         if not self.gateway_rest_api.check_all_secrets_received(self.modelId):
             log_msg("Waiting for more secrets...")
+            return
+
+        self.started = True
+
         log_msg("Aggregator is started :)")
 
         secrets = self.gateway_rest_api.get_model_secrets_for_current_round(self.modelId)

@@ -7,7 +7,7 @@ import requests
 
 from base.support.utils import log_json, log_msg
 from rest.dto import ModelSecretRequest, ModelSecretResponse, ModelMetadata, EndRoundModel, AggregatedSecret, \
-    PersonalInfo, ModelSecretList
+    PersonalInfo, ModelSecretList, AggregatedSecretList
 
 
 class GatewayRestApi:
@@ -54,15 +54,31 @@ class GatewayRestApi:
         response = requests.post(self.base_url + '/leadAggregator/addEndRoundModel', json=body.to_map())
         print(response)
     
-    def read_aggregated_model_update(self, model_id: str, round: str):
+    def get_aggregated_secrets_for_current_round(self, model_id: str):
+        log_msg("Waiting 5 seconds for stupid reasons :)")
+        time.sleep(5)
+        log_msg("Sending get aggregated secrets for current round...")
+
+        req_addr = self.base_url + '/leadAggregator/getAggregatedSecretsForCurrentRound'
+        log_msg(f"Request address: {req_addr}")
+
         params = {
-            'model_id': model_id,
-            'round': round
+            'modelId': model_id,
         }
-        resp = requests.post(self.base_url + '/leadAggregator/readAggregatedModelUpdate', params=params)
-        # content = resp.content.decode()
-        # model_secret = ModelSecretResponse(**json.loads(content))
-        # log_msg(model_secret.modelId)
+
+        resp = requests.get(req_addr, params=params)
+        log_msg(resp)
+        content = resp.content.decode()
+        aggregated_secret_list = AggregatedSecretList(**json.loads(content))
+
+        my_list = []
+        for item in aggregated_secret_list.aggregatedSecretList:
+            aggregated_secret = AggregatedSecret(**item)
+            log_msg("Has weight? YES" if aggregated_secret.weights is not None else "Has weight? NO")
+            log_msg(f"Model Id: {aggregated_secret.modelId}")
+            my_list.append(aggregated_secret)
+        return my_list
+
 
     def add_aggregated_secret(self, body: AggregatedSecret):
         log_msg("Adding aggregated secret...")
@@ -210,12 +226,33 @@ class GatewayRestApi:
             return False
 
     def check_all_secrets_received(self, model_id: str):
+        log_msg("Waiting 5 seconds for stupid reasons :)")
+        time.sleep(5)
+
         log_msg("Check all secrets received...")
         params = {
             'modelId': model_id
         }
 
         resp = requests.get(self.base_url + '/aggregator/checkAllSecretsReceived', params=params)
+        content = resp.content.decode()
+        log_msg(f"Response: {content}")
+
+        if content == "true":
+            return True
+        else:
+            return False
+
+    def check_all_aggregated_secrets_received(self, model_id: str):
+        log_msg("Waiting 5 seconds for stupid reasons :)")
+        time.sleep(5)
+
+        log_msg("Check all aggregated secrets received...")
+        params = {
+            'modelId': model_id
+        }
+
+        resp = requests.get(self.base_url + '/leadAggregator/checkAllAggregatedSecretsReceived', params=params)
         content = resp.content.decode()
         log_msg(f"Response: {content}")
 

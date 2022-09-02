@@ -16,6 +16,7 @@ MODEL_SECRET_ADDED_EVENT = "MODEL_SECRET_ADDED_EVENT"
 CREATE_MODEL_METADATA_EVENT = "CREATE_MODEL_METADATA_EVENT"
 START_TRAINING_EVENT = "START_TRAINING_EVENT"
 ENOUGH_CLIENTS_CHECKED_IN_EVENT = "ENOUGH_CLIENTS_CHECKED_IN_EVENT"
+AGGREGATED_SECRET_ADDED_EVENT = "AGGREGATED_SECRET_ADDED_EVENT"
 
 
 async def process_socket_events(processor: EventProcessor, websocket_address):
@@ -39,6 +40,8 @@ async def process_socket_events(processor: EventProcessor, websocket_address):
                 processor.create_model_metadata(event_payload)
             elif event_name == START_TRAINING_EVENT:
                 processor.start_training_event(event_payload)
+            elif event_name == AGGREGATED_SECRET_ADDED_EVENT:
+                processor.aggregated_secret_added_event(event_payload)
 
 
 

@@ -24,12 +24,10 @@ class ModelMetadata:
 
 class EndRoundModel:
     modelId = None
-    round = None
     weights = None
 
-    def __init__(self, modelId, round, weights):
+    def __init__(self, modelId, weights):
         self.modelId = modelId
-        self.round = round
         self.weights = weights
 
     def to_map(self):
@@ -73,6 +71,13 @@ class ModelSecretList:
         self.modelSecretList = modelSecretList
 
 
+class AggregatedSecretList:
+    aggregatedSecretList = None
+
+    def __init__(self, aggregatedSecretList):
+        self.aggregatedSecretList = aggregatedSecretList
+
+
 class CheckInList:
     checkedInTrainers = None
 
@@ -83,10 +88,12 @@ class CheckInList:
 class AggregatedSecret:
     modelId = None
     weights = None
+    round = None
 
-    def __init__(self, modelId, weights):
+    def __init__(self, modelId, weights, round=None):
         self.modelId = modelId
         self.weights = weights
+        self.round = round
 
     def to_map(self):
         return self.__dict__
