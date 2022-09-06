@@ -49,7 +49,7 @@ def start_next_round(training_round, round_weight):
     all_servers = []
     servers_model = []
 
-    for server_index in range(config.num_servers):
+    for server_index in range(config.number_of_servers):
         all_servers.append({})
         servers_model.append({})
 
@@ -63,18 +63,18 @@ def start_next_round(training_round, round_weight):
 
     for layer_index in range(no_of_layers):
         x = layer_dict[layer_index]
-        shares_dict[layer_index] = np.random.random(size=(config.num_servers,) + layer_shape[layer_index])
+        shares_dict[layer_index] = np.random.random(size=(config.number_of_servers,) + layer_shape[layer_index])
 
-        for server_index in range(0, config.num_servers - 1):
+        for server_index in range(0, config.number_of_servers - 1):
             shares_dict[layer_index][server_index] = np.random.random(size=layer_shape[layer_index])
             x = x - shares_dict[layer_index][server_index]
-        shares_dict[layer_index][config.num_servers - 1] = x
+        shares_dict[layer_index][config.number_of_servers - 1] = x
 
-    for server_index in range(config.num_servers):
+    for server_index in range(config.number_of_servers):
         for layer_index in range(len(shares_dict)):
             all_servers[server_index][layer_index] = shares_dict[layer_index][server_index]
 
-    for index in range(config.num_servers):
+    for index in range(config.number_of_servers):
         serialized_model = pickle.dumps(all_servers[index])
         client_to_server_socket = flevents.socket(flevents.AF_INET, flevents.SOCK_STREAM)
         client_to_server_socket.connect((config.server_address, (config.server_base_port + index)))

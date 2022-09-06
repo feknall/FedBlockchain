@@ -19,10 +19,7 @@ class ControlPanel:
         return self.gateway_rest_api.get_personal_info()
 
     def create_model_metadata(self):
-        self.modelId = str(randint(0, 100000))
-        cfg = Config()
-        body = ModelMetadata(self.modelId, "model1", str(cfg.number_of_clients), "2", "2")
-        self.gateway_rest_api.create_model_metadata(body)
+        pass
 
     def start_training(self):
         self.gateway_rest_api.start_training(self.modelId)
@@ -53,6 +50,17 @@ class ControlPanel:
         loop = asyncio.new_event_loop()
         thread = threading.Thread(target=self.loop_in_thread, args=(loop,))
         thread.start()
+
+
+class FlAdminControlPanel(ControlPanel):
+
+    def create_model_metadata(self):
+        self.modelId = str(randint(0, 100000))
+        cfg = Config()
+        body = ModelMetadata(self.modelId, "model1", str(cfg.number_of_clients),
+                             str(cfg.number_of_servers),
+                             str(cfg.training_rounds))
+        self.gateway_rest_api.create_model_metadata(body)
 
 
 class TrainerControlPanel(ControlPanel):

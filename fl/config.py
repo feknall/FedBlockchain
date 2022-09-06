@@ -4,7 +4,7 @@ class Config:
     S = {}
     check = False
     number_of_clients = 2
-    num_servers = 2
+    number_of_servers = 2
     stop_receive_blocks = False
     count_sum = 0
     training_rounds = 10

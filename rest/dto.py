@@ -39,11 +39,13 @@ class ModelSecretRequest:
     modelId = None
     weights1 = None
     weights2 = None
+    datasetSize = None
 
-    def __init__(self, modelId, weights1=None, weights2=None):
+    def __init__(self, modelId, datasetSize, weights1=None, weights2=None):
         self.modelId = modelId
         self.weights1 = weights1
         self.weights2 = weights2
+        self.datasetSize = datasetSize
 
     def to_map(self):
         return self.__dict__
@@ -52,14 +54,14 @@ class ModelSecretRequest:
 class ModelSecretResponse:
     modelId = None
     round = None
-
-    # This if for response
     weights = None
+    datasetSize = None
 
-    def __init__(self, modelId, round=None, weights=None):
+    def __init__(self, modelId, datasetSize=None, round=None, weights=None):
         self.modelId = modelId
         self.round = round
         self.weights = weights
+        self.datasetSize = datasetSize
 
     def to_map(self):
         return self.__dict__

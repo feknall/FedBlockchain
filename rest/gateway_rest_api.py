@@ -1,7 +1,6 @@
-import json
 import base64
+import json
 import time
-from threading import Thread
 
 import requests
 
@@ -12,28 +11,28 @@ from rest.dto import ModelSecretRequest, ModelSecretResponse, ModelMetadata, End
 
 class GatewayRestApi:
     base_url = None
-    
+
     def __init__(self, base_url):
-        self.base_url = base_url    
-        
+        self.base_url = base_url
+
     def init_ledger(self):
         response = requests.get(self.base_url + '/admin/initLedger')
         print(response)
-    
+
     def create_model_metadata(self, body: ModelMetadata):
         log_msg("Sending creating a model metadata...")
         log_msg("Request /admin/createModelMetadata:")
-    
+
         json_body = body.to_map()
         log_json(json_body)
-    
+
         resp = requests.post(self.base_url + '/admin/createModelMetadata', json=json_body)
         content = resp.content
         metadata = json.loads(content)
-    
+
         log_msg("Response:")
         log_json(metadata)
-    
+
     def start_training(self, model_id: str):
         log_msg("Sending start training...")
 
@@ -44,18 +43,22 @@ class GatewayRestApi:
             'modelId': model_id
         }
         log_json(params)
-    
+
         resp = requests.post(req_addr, params=params)
         content = resp.content
         metadata = json.loads(content)
-    
+
         log_msg("Response:")
         log_json(metadata)
-    
+
     def add_end_round_model(self, body: EndRoundModel):
+        log_msg("Waiting 5 seconds for stupid reasons :)")
+        time.sleep(5)
+        log_msg("Add end round model...")
+
         response = requests.post(self.base_url + '/leadAggregator/addEndRoundModel', json=body.to_map())
-        print(response)
-    
+        log_msg(response)
+
     def get_aggregated_secrets_for_current_round(self, model_id: str):
         log_msg("Waiting 5 seconds for stupid reasons :)")
         time.sleep(5)
@@ -90,7 +93,7 @@ class GatewayRestApi:
         response = requests.post(req_addr, json=body.to_map())
         print(response)
 
-    def get_model_secrets_for_current_round(self, model_id: str):
+    def get_model_secrets_for_current_round(self, model_id: str) -> list[ModelSecretResponse]:
         log_msg("Waiting 5 seconds for stupid reasons :)")
         time.sleep(5)
         log_msg("Sending reading model secrets for current round...")
@@ -129,11 +132,11 @@ class GatewayRestApi:
         }
         response = requests.get(self.base_url + '/aggregator/getModelSecretList', params=params)
         print(response)
-    
+
     def add_model_secret(self, body: ModelSecretRequest):
         response = requests.post(self.base_url + '/trainer/addModelSecret', json=body.to_map())
         print(response)
-    
+
     def check_in_trainer(self):
         response = requests.post(self.base_url + '/trainer/checkInTrainer')
         log_msg(response)
@@ -145,7 +148,7 @@ class GatewayRestApi:
     def check_in_lead_aggregator(self):
         response = requests.post(self.base_url + '/leadAggregator/checkInLeadAggregator')
         log_msg(response)
-    
+
     def get_end_round_model(self, model_id: str) -> EndRoundModel:
         log_msg("Getting end round model...")
         log_msg("Waiting 5 seconds for stupid reasons :)")
@@ -167,7 +170,7 @@ class GatewayRestApi:
         log_msg(f"Model Id: {end_round_model.modelId}")
 
         return end_round_model
-    
+
     def get_personal_info(self):
         log_msg("Getting personal info...")
 
@@ -177,7 +180,7 @@ class GatewayRestApi:
         resp = requests.get(req_addr)
         content = resp.content.decode()
         a_list = json.loads(content)
-    
+
         personal_info_str_1 = json.loads(base64.b64decode(a_list[0]))
         log_json(personal_info_str_1)
 
@@ -189,7 +192,7 @@ class GatewayRestApi:
         personal_info_2 = PersonalInfo(**personal_info_str_2)
 
         return personal_info_1, personal_info_2
-    
+
     def get_trained_model(self, model_id: str):
         params = {
             'model_id': model_id

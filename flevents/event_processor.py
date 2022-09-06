@@ -1,23 +1,20 @@
-
+import base64
 import json
 import pickle
-import threading
 
-import base64
 import numpy as np
 
-
-from base.support.utils import log_msg, log_json
+from base.support.utils import log_msg
 from fl import flcommon
 from fl import mnist_common
 from fl.config import ClientConfig
-
-from rest.dto import ModelMetadata, ModelSecretRequest, TrainerMetadata, ModelSecretResponse, AggregatedSecret, \
+from rest.dto import ModelMetadata, ModelSecretRequest, ModelSecretResponse, AggregatedSecret, \
     EndRoundModel
 from rest.gateway_rest_api import GatewayRestApi
 
 config = ClientConfig()
 client_datasets = mnist_common.load_train_dataset(config.number_of_clients, permute=True)
+x_test, y_test = mnist_common.load_test_dataset()
 
 
 class EventProcessor:
@@ -75,11 +72,22 @@ class EventProcessor:
         pass
 
 
+class FlAdminEventProcessor(EventProcessor):
+
+    def round_finished(self, event_payload):
+        end_round_model = self.gateway_rest_api.get_end_round_model(self.modelId)
+        weights = pickle.loads(base64.b64decode(end_round_model.weights))
+
+        model = mnist_common.get_model(flcommon.input_shape)
+        model.set_weights(weights)
+        model.evaluate(x_test, y_test, verbose=1)
+
+
 class TrainerEventProcessor(EventProcessor):
     roundCounter = 0
 
     def train_one_round(self):
-        x_train, y_train = client_datasets[self.clientIndex][0][:100], client_datasets[self.clientIndex][1][:100]
+        x_train, y_train = client_datasets[self.clientIndex][0], client_datasets[self.clientIndex][1]
         model = mnist_common.get_model(flcommon.input_shape)
 
         if self.roundWeight is not None:
@@ -87,33 +95,29 @@ class TrainerEventProcessor(EventProcessor):
             model.set_weights(self.roundWeight)
 
         model.fit(x_train, y_train, epochs=config.epochs, batch_size=config.batch_size, verbose=config.verbose,
-                  validation_split=config.validation_split)
+                  validation_split=config.validation_split, shuffle=True)
 
-        round_weight = np.array(model.get_weights())
-
-        all_servers = []
-        servers_model = []
-
-        for server_index in range(self.secretsPerClient):
-            all_servers.append({})
-            servers_model.append({})
-
-        # Each client divides its model to some secrets and sends secrets to the servers
         layer_dict, layer_shape, shares_dict = {}, {}, {}
-        data = round_weight
+        data = np.array(model.get_weights())
         no_of_layers = len(data)
         for layer_index in range(no_of_layers):
             layer_dict[layer_index] = data[layer_index]
             layer_shape[layer_index] = data[layer_index].shape
 
         for layer_index in range(no_of_layers):
-            x = layer_dict[layer_index]
-            shares_dict[layer_index] = np.random.random(size=(self.secretsPerClient,) + layer_shape[layer_index])
+            x = np.copy(layer_dict[layer_index])
+            shares_dict[layer_index] = np.random.random(
+                size=(self.secretsPerClient,) + layer_shape[layer_index]).astype(np.float64)
 
-            for server_index in range(0, self.secretsPerClient - 1):
-                shares_dict[layer_index][server_index] = np.random.random(size=layer_shape[layer_index])
-                x = x - shares_dict[layer_index][server_index]
+            for server_index in range(self.secretsPerClient - 1):
+                shares_dict[layer_index][server_index] = np.random.random(size=layer_shape[layer_index]).astype(
+                    np.float32)
+                x = np.subtract(x, shares_dict[layer_index][server_index])
             shares_dict[layer_index][self.secretsPerClient - 1] = x
+
+        all_servers = []
+        for server_index in range(self.secretsPerClient):
+            all_servers.append({})
 
         for server_index in range(self.secretsPerClient):
             for layer_index in range(len(shares_dict)):
@@ -121,8 +125,9 @@ class TrainerEventProcessor(EventProcessor):
 
         weights1 = base64.b64encode(pickle.dumps(all_servers[0])).decode()
         weights2 = base64.b64encode(pickle.dumps(all_servers[1])).decode()
+        dataset_size = client_datasets[self.clientIndex][0].shape[0]
+        model_secret = ModelSecretRequest(self.modelId, dataset_size, weights1, weights2)
 
-        model_secret = ModelSecretRequest(self.modelId, weights1, weights2)
         self.gateway_rest_api.add_model_secret(model_secret)
 
         log_msg("Secrets are sent.")
@@ -155,8 +160,53 @@ class TrainerEventProcessor(EventProcessor):
         log_msg("Training finiiiiiiiiiiiiiiished :D")
 
 
-class FlAdminEventProcessor(EventProcessor):
-    pass
+class AggregatorEventProcessor(EventProcessor):
+    current_round = -1
+
+    def model_secret_added(self, event_payload):
+        x = json.loads(event_payload)
+        model_secret = ModelSecretResponse(**x)
+        log_msg(f"EVENT: A model secret is added. modelId: {model_secret.modelId}")
+
+        if self.current_round >= model_secret.round:
+            log_msg("Already started. Ignoring...")
+            return
+
+        if not self.gateway_rest_api.check_all_secrets_received(self.modelId):
+            log_msg("Waiting for more secrets...")
+            return
+
+        log_msg("Aggregator is started :)")
+
+        self.current_round = model_secret.round
+
+        secrets = self.gateway_rest_api.get_model_secrets_for_current_round(self.modelId)
+
+        clients_secret = []
+        dataset_size_list = []
+        for secret in secrets:
+            clients_secret.append(pickle.loads(base64.b64decode(secret.weights)))
+            dataset_size_list.append(secret.datasetSize)
+        total_dataset_size = sum(dataset_size_list)
+
+        log_msg(f"Trying to aggregate {len(clients_secret)} secrets")
+
+        model = {}
+        for layer_index in range(len(clients_secret[0])):
+            alpha_list = []
+            for client_index in range(len(clients_secret)):
+                alpha = clients_secret[client_index][layer_index] * (
+                        dataset_size_list[client_index] / total_dataset_size)
+                alpha_list.append(alpha)
+            model[layer_index] = np.array(alpha_list).sum(axis=0, dtype=np.float64)
+
+        model_byte = base64.b64encode(pickle.dumps(model)).decode()
+
+        aggregated_secret = AggregatedSecret(self.modelId, model_byte)
+
+        self.gateway_rest_api.add_aggregated_secret(aggregated_secret)
+
+        log_msg("Aggregation finished successfully.")
 
 
 class LeadAggregatorEventProcessor(EventProcessor):
@@ -188,65 +238,14 @@ class LeadAggregatorEventProcessor(EventProcessor):
 
         model = {}
         for layer_index in range(len(decoded_aggregated_secrets[0])):
-            aggregated_secrets_summation = np.zeros(shape=decoded_aggregated_secrets[0][layer_index].shape)
-            for client_index in range(len(decoded_aggregated_secrets)):
-                aggregated_secrets_summation += decoded_aggregated_secrets[client_index][layer_index]
-            model[layer_index] = aggregated_secrets_summation
+            layer_list = []
+            for server_index in range(self.secretsPerClient):
+                layer_list.append(decoded_aggregated_secrets[server_index][layer_index])
+            model[layer_index] = np.array(layer_list).sum(axis=0, dtype=np.float64)
 
-        log_msg("Lead aggregation finished successfully.")
         model_byte = base64.b64encode(pickle.dumps(model)).decode()
-
         end_round_model = EndRoundModel(self.modelId, model_byte)
+
         self.gateway_rest_api.add_end_round_model(end_round_model)
 
-
-class AggregatorEventProcessor(EventProcessor):
-    current_round = -1
-
-    def model_secret_added(self, event_payload):
-        x = json.loads(event_payload)
-        model_secret = ModelSecretResponse(**x)
-        log_msg(f"EVENT: A model secret is added. modelId: {model_secret.modelId}")
-
-        if self.current_round >= model_secret.round:
-            log_msg("Already started. Ignoring...")
-            return
-
-        if not self.gateway_rest_api.check_all_secrets_received(self.modelId):
-            log_msg("Waiting for more secrets...")
-            return
-
-        log_msg("Aggregator is started :)")
-
-        self.current_round = model_secret.round
-
-        secrets = self.gateway_rest_api.get_model_secrets_for_current_round(self.modelId)
-
-        clients_secret = []
-        for secret in secrets:
-            clients_secret.append(pickle.loads(base64.b64decode(secret.weights)))
-
-        log_msg(f"Trying to aggregate {len(clients_secret)} secrets")
-
-        model = {}
-        for layer_index in range(len(clients_secret[0])):
-            secrets_summation = np.zeros(shape=clients_secret[0][layer_index].shape)
-            for client_index in range(len(clients_secret)):
-                secrets_summation += clients_secret[client_index][layer_index]
-            model[layer_index] = secrets_summation
-
-        log_msg("Aggregation finished successfully.")
-        model_byte = base64.b64encode(pickle.dumps(model)).decode()
-
-        aggregated_secret = AggregatedSecret(self.modelId, model_byte)
-        self.gateway_rest_api.add_aggregated_secret(aggregated_secret)
-
-# ------------------ Begin Client Check In ------------------
-
-# ------------------ End Client Check In ------------------
-
-# ------------------ Begin Process Socket Events ------------------
-
-
-# ------------------ Client Check In ------------------
-
+        log_msg("Lead aggregation finished successfully.")

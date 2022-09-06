@@ -41,7 +41,7 @@ def start_master():
     global servers_secret
     for training_round in range(config.training_rounds):
         my_threads = []
-        while len(my_threads) != config.num_servers:
+        while len(my_threads) != config.number_of_servers:
             conn, addr = master_socket.accept()
             thread = threading.Thread(target=handle_server_server, args=(conn, addr))
             thread.start()

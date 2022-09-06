@@ -1,4 +1,4 @@
-from fl.control_panel import ControlPanel
+from fl.control_panel import ControlPanel, FlAdminControlPanel
 from flevents import event_listener
 from flevents.event_processor import FlAdminEventProcessor
 from rest.gateway_rest_api import GatewayRestApi
@@ -6,7 +6,7 @@ from rest.gateway_rest_api import GatewayRestApi
 gateway_rest_api = GatewayRestApi('http://localhost:8083')
 websocket_address = 'ws://localhost:8083'
 
-control_panel = ControlPanel(gateway_rest_api)
+control_panel = FlAdminControlPanel(gateway_rest_api)
 personal_info_1, personal_info_2 = control_panel.get_personal_info()
 client_index = 1
 
