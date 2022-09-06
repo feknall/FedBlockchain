@@ -36,14 +36,16 @@ class GatewayRestApi:
     
     def start_training(self, model_id: str):
         log_msg("Sending start training...")
-        log_msg("Request /admin/createModelMetadata:")
-    
+
+        req_addr = self.base_url + '/admin/startTraining'
+        log_msg(f"Request address: {req_addr}")
+
         params = {
             'modelId': model_id
         }
         log_json(params)
     
-        resp = requests.post(self.base_url + '/admin/startTraining', params=params)
+        resp = requests.post(req_addr, params=params)
         content = resp.content
         metadata = json.loads(content)
     
@@ -59,7 +61,7 @@ class GatewayRestApi:
         time.sleep(5)
         log_msg("Sending get aggregated secrets for current round...")
 
-        req_addr = self.base_url + '/leadAggregator/getAggregatedSecretsForCurrentRound'
+        req_addr = self.base_url + '/leadAggregator/getAggregatedSecretListForCurrentRound'
         log_msg(f"Request address: {req_addr}")
 
         params = {
@@ -79,14 +81,13 @@ class GatewayRestApi:
             my_list.append(aggregated_secret)
         return my_list
 
-
     def add_aggregated_secret(self, body: AggregatedSecret):
         log_msg("Adding aggregated secret...")
 
         req_addr = self.base_url + '/aggregator/addAggregatedSecret'
         log_msg(f"Request address: {req_addr}")
 
-        response = requests.post(self.base_url + '/aggregator/addAggregatedSecret', json=body.to_map())
+        response = requests.post(req_addr, json=body.to_map())
         print(response)
 
     def get_model_secrets_for_current_round(self, model_id: str):
@@ -94,7 +95,7 @@ class GatewayRestApi:
         time.sleep(5)
         log_msg("Sending reading model secrets for current round...")
 
-        req_addr = self.base_url + '/aggregator/readModelSecretsForCurrentRound'
+        req_addr = self.base_url + '/aggregator/getModelSecretListForCurrentRound'
         log_msg(f"Request address: {req_addr}")
 
         params = {
@@ -126,7 +127,7 @@ class GatewayRestApi:
             'modelId': model_id,
             'round': round
         }
-        response = requests.get(self.base_url + '/aggregator/readModelSecrets', params=params)
+        response = requests.get(self.base_url + '/aggregator/getModelSecretList', params=params)
         print(response)
     
     def add_model_secret(self, body: ModelSecretRequest):
@@ -136,20 +137,44 @@ class GatewayRestApi:
     def check_in_trainer(self):
         response = requests.post(self.base_url + '/trainer/checkInTrainer')
         log_msg(response)
+
+    def check_in_aggregator(self):
+        response = requests.post(self.base_url + '/aggregator/checkInAggregator')
+        log_msg(response)
+
+    def check_in_lead_aggregator(self):
+        response = requests.post(self.base_url + '/leadAggregator/checkInLeadAggregator')
+        log_msg(response)
     
-    def read_end_round_model(self, model_id: str, round: str):
+    def get_end_round_model(self, model_id: str) -> EndRoundModel:
+        log_msg("Getting end round model...")
+        log_msg("Waiting 5 seconds for stupid reasons :)")
+        time.sleep(5)
+
+        req_addr = self.base_url + '/trainer/getEndRoundModel'
+        log_msg(f"Request address: {req_addr}")
+
         params = {
-            'model_id': model_id,
-            'round': round
+            'modelId': model_id,
         }
-        response = requests.post(self.base_url + '/user/readEndRoundModel', params=params)
-        print(response)
+
+        resp = requests.get(req_addr, params=params)
+        log_msg(resp)
+        content = resp.content.decode()
+        end_round_model = EndRoundModel(**json.loads(content))
+
+        log_msg("Has weight? YES" if end_round_model.weights is not None else "Has weight? NO")
+        log_msg(f"Model Id: {end_round_model.modelId}")
+
+        return end_round_model
     
     def get_personal_info(self):
         log_msg("Getting personal info...")
-        log_msg("Request /general/getPersonalInfo:")
-    
-        resp = requests.get(self.base_url + '/general/getPersonalInfo')
+
+        req_addr = self.base_url + '/general/getPersonalInfo'
+        log_msg(f"Request address: {req_addr}")
+
+        resp = requests.get(req_addr)
         content = resp.content.decode()
         a_list = json.loads(content)
     
@@ -175,7 +200,10 @@ class GatewayRestApi:
     def check_has_aggregator_attribute(self):
         log_msg('Checking user has trainer attribute ...')
 
-        response = requests.get(self.base_url + '/general/checkHasAggregatorAttribute')
+        req_addr = self.base_url + '/general/checkHasAggregatorAttribute'
+        log_msg(f"Request address: {req_addr}")
+
+        response = requests.get(req_addr)
         content = response.content.decode()
 
         log_msg(f"Response: {content}")
@@ -185,7 +213,10 @@ class GatewayRestApi:
     def check_has_lead_aggregator_attribute(self):
         log_msg('Checking user has lead aggregator attribute ...')
 
-        response = requests.get(self.base_url + '/general/checkHasLeadAggregatorAttribute')
+        req_addr = self.base_url + '/general/checkHasLeadAggregatorAttribute'
+        log_msg(f"Request address: {req_addr}")
+
+        response = requests.get(req_addr)
         content = response.content.decode()
 
         log_msg(f"Response: {content}")
@@ -195,7 +226,10 @@ class GatewayRestApi:
     def check_has_trainer_attribute(self):
         log_msg('Checking user has trainer attribute ...')
 
-        response = requests.get(self.base_url + '/general/checkHasTrainerAttribute')
+        req_addr = self.base_url + '/general/checkHasTrainerAttribute'
+        log_msg(f"Request address: {req_addr}")
+
+        response = requests.get(req_addr)
         content = response.content.decode()
 
         log_msg(f"Response: {content}")
@@ -205,7 +239,10 @@ class GatewayRestApi:
     def check_has_fl_admin_attribute(self):
         log_msg('Checking user has fl admin attribute ...')
 
-        response = requests.get(self.base_url + '/general/checkHasFlAdminAttribute')
+        req_addr = self.base_url + '/general/checkHasFlAdminAttribute'
+        log_msg(f"Request address: {req_addr}")
+
+        response = requests.get(req_addr)
         content = response.content
 
         log_msg(f"Response: {content}")
@@ -214,9 +251,11 @@ class GatewayRestApi:
 
     def check_i_am_selected_for_round(self):
         log_msg("Get I am selected for round...")
-        log_msg("Request /general/checkIAmSelectedForRound")
 
-        resp = requests.get(self.base_url + '/general/checkIAmSelectedForRound')
+        req_addr = self.base_url + '/general/checkIAmSelectedForRound'
+        log_msg(f"Request address: {req_addr}")
+
+        resp = requests.get(req_addr)
         content = resp.content.decode()
         log_msg(f"Response: {content}")
 
@@ -226,15 +265,18 @@ class GatewayRestApi:
             return False
 
     def check_all_secrets_received(self, model_id: str):
+        log_msg("Check all secrets received...")
         log_msg("Waiting 5 seconds for stupid reasons :)")
         time.sleep(5)
 
-        log_msg("Check all secrets received...")
+        req_addr = self.base_url + '/aggregator/checkAllSecretsReceived'
+        log_msg(f"Request address: {req_addr}")
+
         params = {
             'modelId': model_id
         }
 
-        resp = requests.get(self.base_url + '/aggregator/checkAllSecretsReceived', params=params)
+        resp = requests.get(req_addr, params=params)
         content = resp.content.decode()
         log_msg(f"Response: {content}")
 
@@ -244,15 +286,18 @@ class GatewayRestApi:
             return False
 
     def check_all_aggregated_secrets_received(self, model_id: str):
+        log_msg("Check all aggregated secrets received...")
         log_msg("Waiting 5 seconds for stupid reasons :)")
         time.sleep(5)
 
-        log_msg("Check all aggregated secrets received...")
+        req_addr = self.base_url + '/leadAggregator/checkAllAggregatedSecretsReceived'
+        log_msg(f"Request address: {req_addr}")
+
         params = {
             'modelId': model_id
         }
 
-        resp = requests.get(self.base_url + '/leadAggregator/checkAllAggregatedSecretsReceived', params=params)
+        resp = requests.get(req_addr, params=params)
         content = resp.content.decode()
         log_msg(f"Response: {content}")
 

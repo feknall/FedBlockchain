@@ -48,7 +48,7 @@ class EventProcessor:
         # Clients
         pass
 
-    def round_and_training_finished(self, event_payload):
+    def training_finished(self, event_payload):
         # All
         pass
 
@@ -78,18 +78,12 @@ class EventProcessor:
 class TrainerEventProcessor(EventProcessor):
     roundCounter = 0
 
-    def start_training_event(self, event_payload):
-        client_is_selected = self.gateway_rest_api.check_i_am_selected_for_round()
-        if not client_is_selected:
-            log_msg("It's not my turn. Ignoring...")
-            return
-
-        log_msg(f"Start training...")
-
+    def train_one_round(self):
         x_train, y_train = client_datasets[self.clientIndex][0][:100], client_datasets[self.clientIndex][1][:100]
         model = mnist_common.get_model(flcommon.input_shape)
 
         if self.roundWeight is not None:
+            log_msg("Using weights of previous round.")
             model.set_weights(self.roundWeight)
 
         model.fit(x_train, y_train, epochs=config.epochs, batch_size=config.batch_size, verbose=config.verbose,
@@ -138,30 +132,51 @@ class TrainerEventProcessor(EventProcessor):
         self.roundCounter = self.roundCounter + 1
         log_msg("Waiting...")
 
+        log_msg(f"Start training...")
+
+    def start_training_event(self, event_payload):
+        client_is_selected = self.gateway_rest_api.check_i_am_selected_for_round()
+        if not client_is_selected:
+            log_msg("It's not my turn. Ignoring...")
+            return
+        self.train_one_round()
+
+    def round_finished(self, event_payload):
+        client_is_selected = self.gateway_rest_api.check_i_am_selected_for_round()
+        if not client_is_selected:
+            log_msg("It's not my turn. Ignoring...")
+            return
+
+        end_round_model = self.gateway_rest_api.get_end_round_model(self.modelId)
+        self.roundWeight = pickle.loads(base64.b64decode(end_round_model.weights))
+        self.train_one_round()
+
+    def training_finished(self, event_payload):
+        log_msg("Training finiiiiiiiiiiiiiiished :D")
+
 
 class FlAdminEventProcessor(EventProcessor):
     pass
 
 
 class LeadAggregatorEventProcessor(EventProcessor):
-    started = False
+    current_round = -1
 
     def aggregated_secret_added_event(self, event_payload):
-        if self.started:
+        x = json.loads(event_payload)
+        aggregated_secret = AggregatedSecret(**x)
+        log_msg(f"EVENT: A aggregated secret for a model is added. modelId: {aggregated_secret.modelId}")
+
+        if self.current_round >= aggregated_secret.round:
             log_msg("Already started. Ignoring...")
             return
-
-        x = json.loads(event_payload)
-        model_secret = ModelSecretResponse(**x)
-        log_msg(f"EVENT: A aggregated secret for a model is added. modelId: {model_secret.modelId}")
 
         if not self.gateway_rest_api.check_all_aggregated_secrets_received(self.modelId):
             log_msg("Waiting for more aggregated secrets...")
             return
-
-        self.started = True
-
         log_msg("Lead aggregator is started :)")
+
+        self.current_round = aggregated_secret.round
 
         aggregated_secrets = self.gateway_rest_api.get_aggregated_secrets_for_current_round(self.modelId)
 
@@ -186,24 +201,24 @@ class LeadAggregatorEventProcessor(EventProcessor):
 
 
 class AggregatorEventProcessor(EventProcessor):
-    started = False
+    current_round = -1
 
     def model_secret_added(self, event_payload):
-        if self.started:
-            log_msg("Already started. Ignoring...")
-            return
-
         x = json.loads(event_payload)
         model_secret = ModelSecretResponse(**x)
         log_msg(f"EVENT: A model secret is added. modelId: {model_secret.modelId}")
+
+        if self.current_round >= model_secret.round:
+            log_msg("Already started. Ignoring...")
+            return
 
         if not self.gateway_rest_api.check_all_secrets_received(self.modelId):
             log_msg("Waiting for more secrets...")
             return
 
-        self.started = True
-
         log_msg("Aggregator is started :)")
+
+        self.current_round = model_secret.round
 
         secrets = self.gateway_rest_api.get_model_secrets_for_current_round(self.modelId)
 

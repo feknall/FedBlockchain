@@ -1,4 +1,3 @@
-
 class ModelMetadata:
     modelId = None
     name = None
@@ -8,7 +7,8 @@ class ModelMetadata:
     trainingRounds = None
     currentRound = None
 
-    def __init__(self, modelId, name, clientsPerRound, secretsPerClient, trainingRounds, status=None, currentRound=None):
+    def __init__(self, modelId, name, clientsPerRound, secretsPerClient, trainingRounds, status=None,
+                 currentRound=None):
         self.modelId = modelId
         self.name = name
         self.clientsPerRound = clientsPerRound
@@ -17,7 +17,6 @@ class ModelMetadata:
         self.trainingRounds = trainingRounds
         self.currentRound = currentRound
 
-
     def to_map(self):
         return self.__dict__
 
@@ -25,10 +24,12 @@ class ModelMetadata:
 class EndRoundModel:
     modelId = None
     weights = None
+    round = None
 
-    def __init__(self, modelId, weights):
+    def __init__(self, modelId, weights, round=None):
         self.modelId = modelId
         self.weights = weights
+        self.round = round
 
     def to_map(self):
         return self.__dict__
@@ -90,7 +91,7 @@ class AggregatedSecret:
     weights = None
     round = None
 
-    def __init__(self, modelId, weights, round=None):
+    def __init__(self, modelId, weights=None, round=None):
         self.modelId = modelId
         self.weights = weights
         self.round = round

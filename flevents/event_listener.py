@@ -11,7 +11,7 @@ from info_pb2 import Event
 # ALL_SECRETS_RECEIVED_EVENT = "ALL_SECRETS_RECEIVED_EVENT"
 AGGREGATION_FINISHED_EVENT = "AGGREGATION_FINISHED_EVENT"
 ROUND_FINISHED_EVENT = "ROUND_FINISHED_EVENT"
-ROUND_AND_TRAINING_FINISHED_EVENT = "ROUND_AND_TRAINING_FINISHED_EVENT"
+TRAINING_FINISHED_EVENT = "TRAINING_FINISHED_EVENT"
 MODEL_SECRET_ADDED_EVENT = "MODEL_SECRET_ADDED_EVENT"
 CREATE_MODEL_METADATA_EVENT = "CREATE_MODEL_METADATA_EVENT"
 START_TRAINING_EVENT = "START_TRAINING_EVENT"
@@ -32,8 +32,8 @@ async def process_socket_events(processor: EventProcessor, websocket_address):
                 processor.aggregation_finished(event_payload)
             elif event_name == ROUND_FINISHED_EVENT:
                 processor.round_finished(event_payload)
-            elif event_name == ROUND_AND_TRAINING_FINISHED_EVENT:
-                processor.round_and_training_finished(event_payload)
+            elif event_name == TRAINING_FINISHED_EVENT:
+                processor.training_finished(event_payload)
             elif event_name == MODEL_SECRET_ADDED_EVENT:
                 processor.model_secret_added(event_payload)
             elif event_name == CREATE_MODEL_METADATA_EVENT:

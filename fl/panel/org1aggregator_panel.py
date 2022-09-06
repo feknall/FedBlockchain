@@ -1,4 +1,4 @@
-from fl.control_panel import ControlPanel
+from fl.control_panel import AggregatorControlPanel
 from flevents import event_listener
 from flevents.event_processor import AggregatorEventProcessor
 from rest.gateway_rest_api import GatewayRestApi
@@ -6,7 +6,7 @@ from rest.gateway_rest_api import GatewayRestApi
 gateway_rest_api = GatewayRestApi('http://localhost:8091')
 websocket_address = 'ws://localhost:8091'
 
-control_panel = ControlPanel(gateway_rest_api)
+control_panel = AggregatorControlPanel(gateway_rest_api)
 personal_info_1, personal_info_2 = control_panel.get_personal_info()
 client_index = 1
 
