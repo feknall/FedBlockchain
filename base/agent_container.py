@@ -525,7 +525,7 @@ class AriesAgent(DemoAgent):
         #     )
         #
         # elif state == "presentation-received":
-        #     # verifier role
+        #     # verify role
         #     log_status("#27 Process the proof provided by X")
         #     log_status("#28 Check if proof is valid")
         #     proof = await self.admin_POST(
@@ -1205,6 +1205,54 @@ def arg_parser(ident: str = None, port: int = 8020):
         "--taa-accept",
         action="store_true",
         help="Accept the ledger's TAA, if required",
+    )
+    parser.add_argument(
+        "--fabric-ca-client-home",
+        type=str,
+        metavar="<fabric-ca-client-home>",
+        help="Specify the home for fabric ca client"
+    )
+    parser.add_argument(
+        "--fabric-ca-client-enrollment-id",
+        type=str,
+        metavar="<fabric-ca-client-enrollment-id>",
+        help="Specify the enrollment id for fabric ca client"
+    )
+    parser.add_argument(
+        "--fabric-ca-client-enrollment-secret",
+        type=str,
+        metavar="<fabric-ca-client-enrollment-secret>",
+        help="Specify the enrollment secret for fabric ca client"
+    )
+    parser.add_argument(
+        "--fabric-ca-client-ca-name",
+        type=str,
+        metavar="<fabric-ca-client-ca-name>",
+        help="Specify the name of ca server for fabric ca client"
+    )
+    parser.add_argument(
+        "--fabric-ca-client-ca-address",
+        type=str,
+        metavar="<fabric-ca-client-ca-address>",
+        help="Specify the address of ca server for fabric ca client"
+    )
+    parser.add_argument(
+        "--fabric-ca-client-ca-port",
+        type=str,
+        metavar="<fabric-ca-client-ca-port>",
+        help="Specify the port of ca server for fabric ca client"
+    )
+    parser.add_argument(
+        "--fabric-ca-client-tls-certfiles",
+        type=str,
+        metavar="<fabric-ca-client-ca-port>",
+        help="Specify the tls certfiles of ca server for fabric ca client"
+    )
+    parser.add_argument(
+        "--fabric-ca-client-msp",
+        type=str,
+        metavar="<fabric-ca-client-msp>",
+        help="Specify the msp folder for fabric ca client"
     )
     return parser
 

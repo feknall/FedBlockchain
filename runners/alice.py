@@ -134,7 +134,7 @@
 #
 #         await alice_agent.initialize(the_agent=agent)
 #
-#         log_status("#9 Input verifier.py invitation details")
+#         log_status("#9 Input verify.py invitation details")
 #         await input_invitation(alice_agent)
 #
 #         options = "    (3) Send Message\n" "    (4) Input New Invitation\n"

@@ -512,7 +512,7 @@
 #             )
 #
 #         elif state == "presentation-received":
-#             # verifier role
+#             # verify role
 #             log_status("#27 Process the proof provided by X")
 #             log_status("#28 Check if proof is valid")
 #             proof = await self.admin_POST(

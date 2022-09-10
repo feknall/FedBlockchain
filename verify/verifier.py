@@ -5,11 +5,16 @@ import logging
 import os
 import sys
 import time
+from asyncio import constants
+from random import randint
 
 from aiohttp import ClientError
 from qrcode import QRCode
 
+import role_constatns
 from base.support.utils import log_json
+from verify.fabric_ca_args_parser import FabricCaArgParser
+from verify.fabric_ca_client_wrapper import FabricCaClientWrapper
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -374,6 +379,16 @@ class FaberAgent(AriesAgent):
 
 
 async def main(args):
+    fabric_ca_arg_parser = FabricCaArgParser(args)
+    fabric_ca_client_wrapper = FabricCaClientWrapper(fabric_ca_arg_parser.home,
+                                                     fabric_ca_arg_parser.address,
+                                                     fabric_ca_arg_parser.port,
+                                                     fabric_ca_arg_parser.caname,
+                                                     fabric_ca_arg_parser.tls_certfiles,
+                                                     fabric_ca_arg_parser.id,
+                                                     fabric_ca_arg_parser.secret)
+    fabric_ca_client_wrapper.enroll()
+
     faber_agent = await create_agent_with_args(args, ident="faber")
 
     try:
@@ -406,7 +421,7 @@ async def main(args):
         faber_schema_name = "personal schema"
         faber_schema_attrs = [
             "name",
-            "cin_number"
+            "role"
         ]
         if faber_agent.cred_type == CRED_FORMAT_INDY:
             faber_agent.public_did = True
@@ -449,6 +464,7 @@ async def main(args):
         options += "    (14) Verify a Proof Presentation\n"
         options += "    (15) List Wallet DIDs\n"
         options += "    (16) Fetch the Current Public DID\n"
+        options += "    (17) Register for Fabric\n"
         if faber_agent.endorser_role and faber_agent.endorser_role == "author":
             options += "    (D) Set Endorser's DID\n"
         if faber_agent.multitenant:
@@ -555,7 +571,6 @@ async def main(args):
             elif option == "2":
                 try:
                     log_status("#20 Request proof of degree from alice")
-                    req_attr_list = [{"name": "name"}, {"name": "cin_number"}]
 
                     proof_request = {
                         "name": "Proof of Personal Information",
@@ -565,7 +580,7 @@ async def main(args):
                                 "name": "name"
                             },
                             "additionalProp2": {
-                                "name": "cin_number"
+                                "name": "role"
                             }
                         },
                         "requested_predicates": {
@@ -850,7 +865,10 @@ async def main(args):
                     pres_ex_id = await prompt("Enter pres-ex-id: ")
                     verify_resp = await faber_agent.agent.admin_POST(
                         '/present-proof/records/' + pres_ex_id + '/verify-presentation')
-                    log_msg(verify_resp)
+                    log_json(verify_resp)
+                    if verify_resp['verified'] == "true":
+                        log_msg("Identity verified successfully.")
+
                 except Exception as e:
                     log_msg("Something went wrong. Error: {}".format(str(e)))
             elif option == "15":
@@ -867,6 +885,37 @@ async def main(args):
                     log_json(wallet_did_public_resp)
                 except Exception as e:
                     log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "17":
+                try:
+                    role = await prompt("Enter role (trainer/flAdmin/leadAggregator/aggregator):")
+                    random_number = str(randint(0, 100000))
+
+                    if role == role_constatns.ROLE_TRAINER:
+                        id_name = "trainer" + random_number
+                        id_secret = "trainer" + random_number + "pw"
+                        fabric_ca_client_wrapper.register_trainer(id_name, id_secret)
+                    elif role == role_constatns.ROLE_AGGREGATOR:
+                        id_name = "aggregator" + random_number
+                        id_secret = "aggregator" + random_number + "pw"
+                        fabric_ca_client_wrapper.register_aggregator(id_name, id_secret)
+                    elif role == role_constatns.ROLE_FL_ADMIN:
+                        id_name = "flAdmin" + random_number
+                        id_secret = "flAdmin" + random_number + "pw"
+                        fabric_ca_client_wrapper.register_fl_admin(id_name, id_secret)
+                    elif role == role_constatns.ROLE_LEAD_AGGREGATOR:
+                        id_name = "leadAggregator" + random_number
+                        id_secret = "leadAggregator" + random_number + "pw"
+                        fabric_ca_client_wrapper.register_lead_aggregator(id_name, id_secret)
+                    else:
+                        log_msg("Unknown role. There is something wrong. Ignoring...")
+                        return
+                    msg = f"id_name: {id_name}, id_secret: {id_secret}"
+                    await faber_agent.agent.admin_POST(
+                        f"/connections/{faber_agent.agent.connection_id}/send-message",
+                        {"content": msg})
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+
         if faber_agent.show_timing:
             timing = await faber_agent.agent.fetch_timing()
             if timing:

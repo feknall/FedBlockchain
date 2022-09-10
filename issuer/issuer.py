@@ -406,7 +406,7 @@ async def main(args):
         faber_schema_name = "personal schema"
         faber_schema_attrs = [
             "name",
-            "cin_number"
+            "role"
         ]
         if faber_agent.cred_type == CRED_FORMAT_INDY:
             faber_agent.public_did = True

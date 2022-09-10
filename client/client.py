@@ -7,6 +7,9 @@ import os
 import sys
 from urllib.parse import urlparse
 
+from verify.fabric_ca_args_parser import FabricCaArgParser
+from verify.fabric_ca_client_wrapper import FabricCaClientWrapper
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from base.agent_container import (  # noqa:E402
@@ -27,6 +30,8 @@ from aiohttp import ClientError
 
 logging.basicConfig(level=logging.WARNING)
 LOGGER = logging.getLogger(__name__)
+
+
 
 
 class AliceAgent(AriesAgent):
@@ -140,7 +145,7 @@ async def main(args):
 
         await alice_agent.initialize(the_agent=agent)
 
-        # log_status("#9 Input verifier.py invitation details")
+        # log_status("#9 Input verify.py invitation details")
         # await input_invitation(alice_agent)
 
         options = "    (3) Send Message\n" \
@@ -155,7 +160,9 @@ async def main(args):
                   "    (13) See Proof Records\n" \
                   "    (14) Send Presentation for a Present Proof\n" \
                   "    (15) List Wallet DIDs\n" \
-                  "    (16) Fetch the Current Public DID\n"
+                  "    (16) Fetch the Current Public DID\n" \
+                  "    (17) Enroll for Fabric\n"
+
         if alice_agent.endorser_role and alice_agent.endorser_role == "author":
             options += "    (D) Set Endorser's DID\n"
         if alice_agent.multitenant:
@@ -216,10 +223,10 @@ async def main(args):
             elif option == "5":
                 try:
                     name = await prompt("Enter your name: ")
-                    cin_number = await prompt("Enter your cin number: ")
+                    role = await prompt("Enter your role (trainer/flAdmin/aggregator/leadAggregator): ")
 
                     cred_attrs = [{"name": "name", "value": "{}".format(name)},
-                                  {"name": "cin_number", "value": "{}".format(cin_number)}]
+                                  {"name": "role", "value": "{}".format(role)}]
 
                     proposal_request = {
                         "connection_id": alice_agent.agent.connection_id,
@@ -345,6 +352,21 @@ async def main(args):
                     wallet_did_public_resp = await alice_agent.agent.admin_GET('/wallet/did/public')
                     log_msg("Wallet DIDs public read successfully.")
                     log_json(wallet_did_public_resp)
+                except Exception as e:
+                    log_msg("Something went wrong. Error: {}".format(str(e)))
+            elif option == "17":
+                try:
+                    fabric_ca_arg_parser = FabricCaArgParser(args)
+                    enrollment_id = await prompt("Enter enrollment id: ")
+                    enrollment_secret = await prompt("Enter enrollment secret: ")
+                    fabric_ca_client_wrapper = FabricCaClientWrapper(fabric_ca_arg_parser.home,
+                                                                      fabric_ca_arg_parser.address,
+                                                                      fabric_ca_arg_parser.port,
+                                                                      fabric_ca_arg_parser.caname,
+                                                                      fabric_ca_arg_parser.tls_certfiles,
+                                                                      enrollment_id,
+                                                                      enrollment_secret)
+                    fabric_ca_client_wrapper.enroll_msp(fabric_ca_arg_parser.msp)
                 except Exception as e:
                     log_msg("Something went wrong. Error: {}".format(str(e)))
         if alice_agent.show_timing:
