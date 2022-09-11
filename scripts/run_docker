@@ -3,7 +3,7 @@
 cd "$(dirname "$0")" || exit 1
 CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-docker}"
 
-$CONTAINER_RUNTIME build -t aries-cloudagent-run -f ../docker/Dockerfile.run .. || exit 1
+$CONTAINER_RUNTIME build -t identity-cloudagent-run -f ../docker/Dockerfile.run .. || exit 1
 
 ARGS=""
 for PORT in $PORTS; do
@@ -49,4 +49,4 @@ fi
 
 RAND_NAME=$(env LC_ALL=C tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 16 | head -n 1)
 $CONTAINER_RUNTIME run --rm -ti --name "aries-cloudagent-runner_${RAND_NAME}" --net=bridge \
-    $ARGS aries-cloudagent-run "$@"
+    $ARGS identity-cloudagent-run "$@"
