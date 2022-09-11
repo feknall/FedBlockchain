@@ -4,8 +4,8 @@ import time
 
 import requests
 
-from base.support.utils import log_json, log_msg
-from rest.dto import ModelSecretRequest, ModelSecretResponse, ModelMetadata, EndRoundModel, AggregatedSecret, \
+from identity.base.support.utils import log_json, log_msg
+from fl.rest.dto import ModelSecretRequest, ModelSecretResponse, ModelMetadata, EndRoundModel, AggregatedSecret, \
     PersonalInfo, ModelSecretList, AggregatedSecretList
 
 

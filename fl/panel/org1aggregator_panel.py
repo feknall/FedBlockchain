@@ -1,7 +1,7 @@
-from fl.control_panel import AggregatorControlPanel
-from flevents import event_listener
-from flevents.event_processor import AggregatorEventProcessor
-from rest.gateway_rest_api import GatewayRestApi
+from fl.controlpanel.aggregator_control_panel import AggregatorControlPanel
+from fl.flevents import event_listener
+from fl.flevents.event_processor import AggregatorEventProcessor
+from fl.rest.gateway_rest_api import GatewayRestApi
 
 gateway_rest_api = GatewayRestApi('http://localhost:8091')
 websocket_address = 'ws://localhost:8091'

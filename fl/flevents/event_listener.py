@@ -3,12 +3,11 @@ import threading
 
 import websockets
 
-from base.support.utils import log_msg
-from flevents.event_processor import EventProcessor
+from identity.base.support.utils import log_msg
+from fl.flevents.event_processor import EventProcessor
 from info_pb2 import Event
 
 
-# ALL_SECRETS_RECEIVED_EVENT = "ALL_SECRETS_RECEIVED_EVENT"
 AGGREGATION_FINISHED_EVENT = "AGGREGATION_FINISHED_EVENT"
 ROUND_FINISHED_EVENT = "ROUND_FINISHED_EVENT"
 TRAINING_FINISHED_EVENT = "TRAINING_FINISHED_EVENT"
@@ -42,7 +41,6 @@ async def process_socket_events(processor: EventProcessor, websocket_address):
                 processor.start_training_event(event_payload)
             elif event_name == AGGREGATED_SECRET_ADDED_EVENT:
                 processor.aggregated_secret_added_event(event_payload)
-
 
 
 def run(processor, websocket_address):

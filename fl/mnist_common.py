@@ -4,15 +4,17 @@ from tensorflow.keras.layers import (Dense)
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.utils import to_categorical
 
-from fl import flcommon
+
+feature_vector_length = 784
+input_shape = (feature_vector_length,)
 
 
 def load_train_dataset(n_clients=3, permute=False):
-    client_datasets = {}  # defining local datasets for each client
+    client_datasets = {}
 
     (x_train, y_train), (_, _) = mnist.load_data()
 
-    x_train = x_train.reshape(x_train.shape[0], flcommon.feature_vector_length)
+    x_train = x_train.reshape(x_train.shape[0], feature_vector_length)
 
     if permute == True:
         permutation_indexes = np.random.permutation(len(x_train))
@@ -22,7 +24,6 @@ def load_train_dataset(n_clients=3, permute=False):
     x_train = x_train.astype('float32')
     x_train /= 255
 
-    # Convert target classes to categorical ones
     y_train = to_categorical(y_train)
 
     for i in range(n_clients):
@@ -35,7 +36,7 @@ def load_train_dataset(n_clients=3, permute=False):
 
 def load_test_dataset():
     (_, _), (x_test, y_test) = mnist.load_data()
-    x_test = x_test.reshape(x_test.shape[0], flcommon.feature_vector_length)
+    x_test = x_test.reshape(x_test.shape[0], feature_vector_length)
     x_test = x_test.astype('float32')
     x_test /= 255
     # Convert target classes to categorical ones
@@ -49,7 +50,6 @@ def get_model(input_shape):
     model.add(Dense(50, activation='relu'))
     model.add(Dense(10, activation='softmax'))
 
-    # Configure the model and start training
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     return model

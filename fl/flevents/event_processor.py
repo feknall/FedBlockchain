@@ -4,13 +4,13 @@ import pickle
 
 import numpy as np
 
-from base.support.utils import log_msg
+from identity.base.support.utils import log_msg
 from fl import flcommon
 from fl import mnist_common
 from fl.config import ClientConfig
-from rest.dto import ModelMetadata, ModelSecretRequest, ModelSecretResponse, AggregatedSecret, \
+from fl.rest.dto import ModelMetadata, ModelSecretRequest, ModelSecretResponse, AggregatedSecret, \
     EndRoundModel
-from rest.gateway_rest_api import GatewayRestApi
+from fl.rest.gateway_rest_api import GatewayRestApi
 
 config = ClientConfig()
 client_datasets = mnist_common.load_train_dataset(config.number_of_clients, permute=True)

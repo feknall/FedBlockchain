@@ -1,11 +1,8 @@
 import asyncio
 import threading
-from random import randint
 
-from base.support.utils import log_msg
-from fl.config import Config
-from rest.dto import ModelMetadata
-from rest.gateway_rest_api import GatewayRestApi
+from identity.base.support.utils import log_msg
+from fl.rest.gateway_rest_api import GatewayRestApi
 
 
 class ControlPanel:
@@ -52,30 +49,4 @@ class ControlPanel:
         thread.start()
 
 
-class FlAdminControlPanel(ControlPanel):
 
-    def create_model_metadata(self):
-        self.modelId = str(randint(0, 100000))
-        cfg = Config()
-        body = ModelMetadata(self.modelId, "model1", str(cfg.number_of_clients),
-                             str(cfg.number_of_servers),
-                             str(cfg.training_rounds))
-        self.gateway_rest_api.create_model_metadata(body)
-
-
-class TrainerControlPanel(ControlPanel):
-
-    def check_in_func(self):
-        self.gateway_rest_api.check_in_trainer()
-
-
-class LeadAggregatorControlPanel(ControlPanel):
-
-    def check_in_func(self):
-        self.gateway_rest_api.check_in_lead_aggregator()
-
-
-class AggregatorControlPanel(ControlPanel):
-
-    def check_in_func(self):
-        self.gateway_rest_api.check_in_aggregator()

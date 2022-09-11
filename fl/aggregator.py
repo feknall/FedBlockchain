@@ -1,5 +1,5 @@
 import pickle
-import flevents
+from fl import flevents
 import sys
 import threading
 

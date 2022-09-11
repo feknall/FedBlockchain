@@ -1,7 +1,7 @@
-from fl.control_panel import TrainerControlPanel
-from flevents import event_listener
-from flevents.event_processor import TrainerEventProcessor
-from rest.gateway_rest_api import GatewayRestApi
+from fl.controlpanel.trainer_control_panel import TrainerControlPanel
+from fl.flevents import event_listener
+from fl.flevents.event_processor import TrainerEventProcessor
+from fl.rest.gateway_rest_api import GatewayRestApi
 
 gateway_rest_api = GatewayRestApi('http://localhost:8081')
 websocket_address = 'ws://localhost:8081'
@@ -20,5 +20,3 @@ event_listener = event_listener.listen(event_processor, websocket_address)
 control_panel.check_in()
 control_panel.has_trainer_attribute()
 control_panel.get_personal_info()
-# control_panel.create_model_metadata()
-# control_panel.start_training()

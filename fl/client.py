@@ -1,14 +1,10 @@
-# Run the client.py file for each client with just one change: weights file name.
-# For eg., if there are 3 clients, run this file 3 times with the corresponding weight file names.
-# follow the prompts appearing each time.
-
 import pickle
 import sys
 
 import numpy as np
 
 import flcommon
-import flevents
+from fl import flevents
 import mnist_common
 from config import ClientConfig
 

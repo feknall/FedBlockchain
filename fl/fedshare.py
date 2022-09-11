@@ -1,6 +1,6 @@
 import numpy as np
 
-import mnist_common
+from fl import mnist_common
 
 
 def train_fedshare(number_of_clients, training_rounds, epochs, batch_size, verbose, validation_split,
@@ -111,9 +111,9 @@ if __name__ == "__main__":
     batch_size = 16
     validation_split = 0.1
     verbose = 1
-    client_datasets = mnistcommon.load_train_dataset(number_of_clients, permute=True)
-    dataset_generator = mnistcommon.load_train_dataset
-    model_generator = mnistcommon.get_model
+    client_datasets = mnist_common.load_train_dataset(number_of_clients, permute=True)
+    dataset_generator = mnist_common.load_train_dataset
+    model_generator = mnist_common.get_model
     input_shape = (32, 32, 3)
     sctoch_weights = train_fedshare(number_of_clients, training_rounds, epochs, batch_size, verbose,
                                     validation_split,
