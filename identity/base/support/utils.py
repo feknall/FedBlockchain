@@ -255,7 +255,7 @@ def check_requires(args):
 
             get_library()
         except ImportError:
-            print("aries-askar module not installed")
+            print("identity-askar module not installed")
             sys.exit(1)
         except OSError:
             print("askar shared library could not be loaded")

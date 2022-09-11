@@ -59,11 +59,11 @@ GENESIS_FILE = os.getenv("GENESIS_FILE")
 if RUN_MODE == "docker":
     DEFAULT_INTERNAL_HOST = os.getenv("DOCKERHOST") or "host.docker.internal"
     DEFAULT_EXTERNAL_HOST = DEFAULT_INTERNAL_HOST
-    DEFAULT_PYTHON_PATH = "."
+    DEFAULT_PYTHON_PATH = ""
 elif RUN_MODE == "pwd":
     # DEFAULT_INTERNAL_HOST =
     DEFAULT_EXTERNAL_HOST = os.getenv("DOCKERHOST") or "host.docker.internal"
-    DEFAULT_PYTHON_PATH = "."
+    DEFAULT_PYTHON_PATH = ""
 
 CRED_FORMAT_INDY = "indy"
 CRED_FORMAT_JSON_LD = "json-ld"

@@ -8,12 +8,11 @@ import sys
 import time
 
 import yaml
-from aiohttp import ClientError
 from qrcode import QRCode
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from base.support.agent import (  # noqa:E402
+from identity.base.support.agent import (  # noqa:E402
     DemoAgent,
     default_genesis_txns,
     start_mediator_agent,
@@ -24,7 +23,7 @@ from base.support.agent import (  # noqa:E402
     DID_METHOD_KEY,
     KEY_TYPE_BLS,
 )
-from base.support.utils import (  # noqa:E402
+from identity.base.support.utils import (  # noqa:E402
     check_requires,
     log_json,
     log_msg,
@@ -1091,7 +1090,7 @@ def arg_parser(ident: str = None, port: int = 8020):
     "ident", if specified, refers to one of the standard demo personas - alice, faber, acme or performance.
     """
     parser = argparse.ArgumentParser(
-        description="Runs a " + (ident or "aries") + " demo agent."
+        description="Runs a " + (ident or "identity") + " demo agent."
     )
     if not ident:
         parser.add_argument(

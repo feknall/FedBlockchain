@@ -1,6 +1,6 @@
 import subprocess
 
-from base.support.utils import log_msg
+from identity.base.support.utils import log_msg
 
 
 class FabricCaClientWrapper:
