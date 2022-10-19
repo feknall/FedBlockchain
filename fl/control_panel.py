@@ -1,8 +1,8 @@
 import asyncio
 import threading
 
+from fl.gateway_rest_api import GatewayRestApi
 from identity.base.support.utils import log_msg
-from fl.rest.gateway_rest_api import GatewayRestApi
 
 
 class ControlPanel:
@@ -13,7 +13,7 @@ class ControlPanel:
         self.gateway_rest_api = gateway_rest_api
 
     def get_personal_info(self):
-        return self.gateway_rest_api.get_personal_info()
+        pass
 
     def create_model_metadata(self):
         pass

@@ -1,8 +1,8 @@
 from random import randint
 
 from fl.config import Config
-from fl.controlpanel.control_panel import ControlPanel
-from fl.rest.dto import ModelMetadata
+from fl.control_panel import ControlPanel
+from fl.dto import ModelMetadata
 
 
 class FlAdminControlPanel(ControlPanel):

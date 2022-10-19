@@ -1,4 +1,4 @@
-from fl.controlpanel.control_panel import ControlPanel
+from fl.control_panel import ControlPanel
 
 
 class LeadAggregatorControlPanel(ControlPanel):
