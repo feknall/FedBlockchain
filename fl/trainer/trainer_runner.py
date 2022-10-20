@@ -6,7 +6,7 @@ from fl.trainer.trainer_event_processor import TrainerEventProcessor
 from fl.trainer.trainer_gateway_rest_api import TrainerGatewayRestApi
 
 
-def start(address: str, port: str, client_index: int):
+def run(address: str, port: str, client_index: int):
     gateway_rest_api = TrainerGatewayRestApi(f'http://{address}:{port}')
     websocket_address = f'ws://{address}:{port}'
 
@@ -27,4 +27,4 @@ if __name__ == "__main__":
     port = sys.argv[2]
     client_index = sys.argv[3]
 
-    start(address, port, int(client_index))
+    run(address, port, int(client_index))

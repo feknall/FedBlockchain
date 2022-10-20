@@ -3,7 +3,7 @@ import sys
 from fl.fladmin.fl_admin_control_panel import FlAdminControlPanel
 from fl.fladmin.fl_admin_event_processor import FlAdminEventProcessor
 from fl.fladmin.fl_admin_gateway_rest_api import FlAdminGatewayRestApi
-import fl_admin_event_listener as event_listener
+import fl.fladmin.fl_admin_event_listener as event_listener
 
 
 def run(address: str, port: str):
