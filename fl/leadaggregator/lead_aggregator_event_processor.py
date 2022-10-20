@@ -5,7 +5,7 @@ import pickle
 import numpy as np
 
 from fl.flevents.event_processor import EventProcessor
-from fl.leadaggregator.lead_aggregator_rest_api import LeadAggregatorGatewayRestApi
+from fl.leadaggregator.lead_aggregator_gateway_rest_api import LeadAggregatorGatewayRestApi
 from fl.dto import AggregatedSecret, \
     EndRoundModel
 from identity.base.support.utils import log_msg

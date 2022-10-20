@@ -22,7 +22,9 @@ def start(address: str, port: str, client_index: int):
 if __name__ == "__main__":
     # trainer_runner.py [address] [port] [client-index]
     # trainer_runner.py localhost 8080 1
+    # trainer_runner.py localhost 8081 2
     address = sys.argv[1]
     port = sys.argv[2]
     client_index = sys.argv[3]
+
     start(address, port, int(client_index))

@@ -1,14 +1,13 @@
 import sys
 
+from fl.leadaggregator import lead_aggregator_event_listener as event_listener
 from fl.leadaggregator.lead_aggregator_control_panel import LeadAggregatorControlPanel
-from fl.flevents import event_listener
 from fl.leadaggregator.lead_aggregator_event_processor import LeadAggregatorEventProcessor
-
-from fl.gateway_rest_api import GatewayRestApi
+from fl.leadaggregator.lead_aggregator_gateway_rest_api import LeadAggregatorGatewayRestApi
 
 
 def run(address: str, port: str):
-    gateway_rest_api = GatewayRestApi(f'http://{address}:{port}')
+    gateway_rest_api = LeadAggregatorGatewayRestApi(f'http://{address}:{port}')
     websocket_address = f'ws://{address}:{port}'
 
     control_panel = LeadAggregatorControlPanel(gateway_rest_api)
@@ -17,7 +16,7 @@ def run(address: str, port: str):
     event_listener.listen(event_processor, websocket_address)
 
     control_panel.check_in()
-    control_panel.has_fl_admin_attribute()
+    control_panel.check_has_lead_aggregator_attribute()
     control_panel.get_personal_info()
 
 

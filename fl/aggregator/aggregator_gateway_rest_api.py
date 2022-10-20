@@ -79,6 +79,6 @@ class AggregatorGatewayRestApi(GatewayRestApi):
         else:
             return False
 
-    def get_personal_info_fl_admin(self):
+    def get_personal_info_aggregator(self):
         req_addr = self.base_url + '/aggregator/getPersonalInfo'
         return self.get_personal_info_single(req_addr)

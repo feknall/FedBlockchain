@@ -11,6 +11,10 @@ from identity.base.support.utils import log_msg
 
 class LeadAggregatorGatewayRestApi(GatewayRestApi):
 
+    def check_in(self):
+        response = requests.post(self.base_url + '/leadAggregator/checkInLeadAggregator')
+        log_msg(response)
+
     def get_personal_info(self):
         req_addr = self.base_url + '/leadAggregator/getPersonalInfo'
         return self.get_personal_info_single(req_addr)
