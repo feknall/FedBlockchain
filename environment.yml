@@ -1,0 +1,8 @@
+name: fedblockchain
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.9.12
+  - tensorflow
+  - prompt_toolkit=2.0.10

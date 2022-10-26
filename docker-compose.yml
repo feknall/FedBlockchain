@@ -1,92 +1,64 @@
 version: "3.9"
 services:
   aggregator-org1:
-    container_name: fed-aggregator.org1.example.com
+    container_name: core-aggregator.org1.example.com
     image: dist-fed-core:latest
     labels:
-      service: aggregator-dist-fed-core
+      service: aggregator-core
     command:
+      - "aggregator"
       - "localhost"
       - "8091"
+    network_mode: "host"
   aggregator-org2:
-    container_name: aggregator.org2.example.com
-    image: dist-fed-gateway:latest
+    container_name: core-aggregator.org2.example.com
+    image: dist-fed-core:latest
     labels:
-      service: aggregator-dist-fed-gateway
-    volumes:
-      - ${DIST_FED_GATEWAY_CREDENTIAL_HOME}:/credential
+      service: aggregator-core
     command:
-      - "--fl.role=aggregator"
-      - "--others.cert.path=/credential/org2.example.com/users/Aggregator1@org2.example.com/msp/signcerts/cert.pem"
-      - "--others.key-dir.path=/credential/org2.example.com/users/Aggregator1@org2.example.com/msp/keystore"
-      - "--others.tls-cert.path=/credential/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt"
-      - "--server.port=8092"
-    ports:
-      - "8092:8092"
+        - "aggregator"
+        - "localhost"
+        - "8092"
+    network_mode: "host"
   flAdmin:
-    container_name: admin.org2.example.com
-    image: dist-fed-gateway:latest
+    container_name: core-flAdmin.org2.example.com
+    image: dist-fed-core:latest
     labels:
-      service: admin-dist-fed-gateway
-    volumes:
-      - ${DIST_FED_GATEWAY_CREDENTIAL_HOME}:/credential
+      service: flAdmin-core
     command:
-      - "--fl.role=flAdmin"
-      - "--others.cert.path=/credential/org2.example.com/users/Admin@org2.example.com/msp/signcerts/cert.pem"
-      - "--others.key-dir.path=/credential/org2.example.com/users/Admin@org2.example.com/msp/keystore"
-      - "--others.tls-cert.path=/credential/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt"
-      - "--server.port=8083"
-    ports:
-      - "8083:8083"
+      - "flAdmin"
+      - "localhost"
+      - "8083"
+    network_mode: "host"
   leadAggregator:
-    container_name: leadAggregator.org2.example.com
-    image: dist-fed-gateway:latest
+    container_name: core-leadAggregator.org2.example.com
+    image: dist-fed-core:latest
     labels:
-      service: leadAggregator-dist-fed-gateway
-    volumes:
-      - ${DIST_FED_GATEWAY_CREDENTIAL_HOME}:/credential
+      service: leadAggregator-core
     command:
-      - "--fl.role=leadAggregator"
-      - "--others.cert.path=/credential/org2.example.com/users/LeadAggregator1@org2.example.com/msp/signcerts/cert.pem"
-      - "--others.key-dir.path=/credential/org2.example.com/users/LeadAggregator1@org2.example.com/msp/keystore"
-      - "--others.tls-cert.path=/credential/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt"
-      - "--server.port=8082"
-    ports:
-      - "8082:8082"
+      - "leadAggregator"
+      - "localhost"
+      - "8082"
+    network_mode: "host"
   trainer01:
-    container_name: trainer01.example.com
-    image: dist-fed-gateway:latest
+    container_name: core-trainer01.example.com
+    image: dist-fed-core:latest
     labels:
-      service: trainer-dist-fed-gateway
-    volumes:
-      # /home/hamid/Documents/fabric-samples/test-network/organizations/peerOrganizations
-      - ${DIST_FED_GATEWAY_CREDENTIAL_HOME}:/credential
+      service: trainer-core
     command:
-      - "--fl.role=trainer"
-      - "--trainer.org1.cert.path=/credential/org1.example.com/users/Trainer1@org1.example.com/msp/signcerts/cert.pem"
-      - "--trainer.org1.key-dir.path=/credential/org1.example.com/users/Trainer1@org1.example.com/msp/keystore"
-      - "--trainer.org1.tls-cert.path=/credential/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt"
-      - "--trainer.org2.cert.path=/credential/org2.example.com/users/Trainer1@org2.example.com/msp/signcerts/cert.pem"
-      - "--trainer.org2.key-dir.path=/credential/org2.example.com/users/Trainer1@org2.example.com/msp/keystore"
-      - "--trainer.org2.tls-cert.path=/credential/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt"
-      - "--server.port=8080"
-    ports:
-      - "8080:8080"
+      - "trainer"
+      - "localhost"
+      - "8080"
+      - "1"
+    network_mode: "host"
   trainer02:
-    container_name: trainer02.example.com
-    image: dist-fed-gateway:latest
+    container_name: core-trainer02.example.com
+    image: dist-fed-core:latest
     labels:
-      service: trainer-dist-fed-gateway
-    volumes:
-      - ${DIST_FED_GATEWAY_CREDENTIAL_HOME}:/credential
+      service: trainer-core
     command:
-      - "--fl.role=trainer"
-      - "--trainer.org1.cert.path=/credential/org1.example.com/users/Trainer2@org1.example.com/msp/signcerts/cert.pem"
-      - "--trainer.org1.key-dir.path=/credential/org1.example.com/users/Trainer2@org1.example.com/msp/keystore"
-      - "--trainer.org1.tls-cert.path=/credential/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt"
-      - "--trainer.org2.cert.path=/credential/org2.example.com/users/Trainer2@org2.example.com/msp/signcerts/cert.pem"
-      - "--trainer.org2.key-dir.path=/credential/org2.example.com/users/Trainer2@org2.example.com/msp/keystore"
-      - "--trainer.org2.tls-cert.path=/credential/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt"
-      - "--server.port=8081"
-    ports:
-      - "8081:8081"
+      - "trainer"
+      - "localhost"
+      - "8081"
+      - "2"
+    network_mode: "host"
