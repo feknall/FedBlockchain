@@ -39,7 +39,7 @@ services:
       - "trainer"
       - "localhost"
       - "8080"
-      - "1"
+      - "0"
     network_mode: "host"
   trainer02:
     container_name: core-trainer02.example.com
@@ -50,7 +50,7 @@ services:
       - "trainer"
       - "localhost"
       - "8081"
-      - "2"
+      - "1"
     network_mode: "host"
   flAdmin:
     container_name: core-flAdmin.org2.example.com
