@@ -10,7 +10,7 @@ def run(address: str, port: str, client_index: int):
     gateway_rest_api = TrainerGatewayRestApi(f'http://{address}:{port}')
     websocket_address = f'ws://{address}:{port}'
 
-    event_processor = TrainerEventProcessor(client_index=client_index, gateway_rest_api=gateway_rest_api)
+    event_processor = TrainerEventProcessor(client_index=client_index, secrets_per_client=2, gateway_rest_api=gateway_rest_api)
     trainer_event_listener.listen(event_processor, websocket_address)
 
     control_panel = TrainerControlPanel(gateway_rest_api)

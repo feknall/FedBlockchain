@@ -6,7 +6,7 @@ import numpy as np
 
 from fl.aggregator.aggregator_gateway_rest_api import AggregatorGatewayRestApi
 from fl.flevents.event_processor import EventProcessor
-from fl.dto import ModelSecretResponse, AggregatedSecret
+from fl.dto import ModelSecretResponse, AggregatedSecret, ModelMetadata
 from identity.base.support.utils import log_msg
 
 
@@ -61,3 +61,9 @@ class AggregatorEventProcessor(EventProcessor):
         self.gateway_rest_api.add_aggregated_secret(aggregated_secret)
 
         log_msg("Aggregation finished successfully.")
+
+    def start_training_event(self, event_payload):
+        x = json.loads(event_payload)
+        metadata = ModelMetadata(**x)
+        log_msg(f"EVENT: A model training started. modelId: {metadata.modelId}")
+        self.modelId = metadata.modelId

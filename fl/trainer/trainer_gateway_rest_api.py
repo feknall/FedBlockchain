@@ -3,7 +3,7 @@ import json
 
 import requests
 
-from fl.dto import PersonalInfo
+from fl.dto import PersonalInfo, EndRoundModel
 from fl.dto import ModelSecretRequest
 from fl.gateway_rest_api import GatewayRestApi
 from identity.base.support.utils import log_msg, log_json
@@ -11,7 +11,12 @@ from identity.base.support.utils import log_msg, log_json
 
 class TrainerGatewayRestApi(GatewayRestApi):
 
+    def get_end_round_model(self, model_id: str) -> EndRoundModel:
+        req_addr = self.base_url + '/trainer/getEndRoundModel'
+        return super().get_end_round_model_base(model_id, req_addr)
+
     def add_model_secret(self, body: ModelSecretRequest):
+        log_msg("Sending secrets...")
         response = requests.post(self.base_url + '/trainer/addModelSecret', json=body.to_map())
         print(response)
 

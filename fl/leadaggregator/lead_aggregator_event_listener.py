@@ -28,6 +28,8 @@ async def process_socket_events(lead_aggregator: LeadAggregatorEventProcessor, w
             event_payload = event.payload
             if event_name == AGGREGATED_SECRET_ADDED_EVENT:
                 lead_aggregator.aggregated_secret_added_event(event_payload)
+            elif event_name == START_TRAINING_EVENT:
+                lead_aggregator.start_training_event(event_payload)
 
 
 def run(lead_aggregator: LeadAggregatorEventProcessor, websocket_address):

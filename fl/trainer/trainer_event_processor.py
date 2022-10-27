@@ -2,11 +2,12 @@ import base64
 import pickle
 
 import numpy as np
+import json
 
 from fl import mnist_common
 from fl.config import ClientConfig
 from fl.flevents.event_processor import EventProcessor
-from fl.dto import ModelSecretRequest
+from fl.dto import ModelSecretRequest, ModelMetadata
 from fl.trainer.trainer_gateway_rest_api import TrainerGatewayRestApi
 from identity.base.support.utils import log_msg
 
@@ -19,13 +20,14 @@ class TrainerEventProcessor(EventProcessor):
     clientIndex = None
     gateway_rest_api = None
 
-    def __init__(self, client_index, gateway_rest_api: TrainerGatewayRestApi):
+    def __init__(self, client_index, secrets_per_client, gateway_rest_api: TrainerGatewayRestApi):
         self.clientIndex = client_index
         self.gateway_rest_api = gateway_rest_api
+        self.secretsPerClient = secrets_per_client
 
     def train_one_round(self):
         x_train, y_train = client_datasets[self.clientIndex][0], client_datasets[self.clientIndex][1]
-        model = mnist_common.get_model(mnist_common.input_shape)
+        model = mnist_common.get_model()
 
         if self.roundWeight is not None:
             log_msg("Using weights of previous round.")
@@ -81,6 +83,10 @@ class TrainerEventProcessor(EventProcessor):
         if not client_is_selected:
             log_msg("It's not my turn. Ignoring...")
             return
+        x = json.loads(event_payload)
+        metadata = ModelMetadata(**x)
+        log_msg(f"EVENT: A model training started. modelId: {metadata.modelId}")
+        self.modelId = metadata.modelId
         self.train_one_round()
 
     def round_finished(self, event_payload):

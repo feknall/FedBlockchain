@@ -29,8 +29,11 @@ async def process_socket_events(trainer: TrainerEventProcessor, websocket_addres
 
             if event_name == ROUND_FINISHED_EVENT:
                 trainer.round_finished(event_payload)
+            elif event_name == START_TRAINING_EVENT:
+                trainer.start_training_event(event_payload)
             elif event_name == TRAINING_FINISHED_EVENT:
                 trainer.training_finished(event_payload)
+
 
 
 def run(trainer: TrainerEventProcessor, websocket_address):

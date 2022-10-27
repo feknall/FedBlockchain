@@ -3,7 +3,7 @@ import sys
 from fl.aggregator.aggregator_event_processor import AggregatorEventProcessor
 from fl.aggregator.aggregator_gateway_rest_api import AggregatorGatewayRestApi
 from fl.aggregator.aggregator_control_panel import AggregatorControlPanel
-from fl.aggregator import aggregator_event_listener as event_listener
+from fl.aggregator import aggregator_event_listener
 
 
 def run(address: str, port: str):
@@ -11,7 +11,7 @@ def run(address: str, port: str):
     websocket_address = f'ws://{address}:{port}'
 
     event_processor = AggregatorEventProcessor(gateway_rest_api=gateway_rest_api)
-    event_listener.listen(event_processor, websocket_address)
+    aggregator_event_listener.listen(event_processor, websocket_address)
 
     control_panel = AggregatorControlPanel(gateway_rest_api)
     control_panel.check_in()

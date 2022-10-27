@@ -29,7 +29,7 @@ def start_next_round(training_round, round_weight):
     # Each client train a model
     x_train, y_train = client_datasets[config.client_index][0], client_datasets[config.client_index][1]
 
-    model = mnist_common.get_model(flcommon.input_shape)
+    model = mnist_common.get_model()
     if training_round != 0:
         model.set_weights(round_weight)
 

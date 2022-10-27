@@ -11,7 +11,7 @@ def run(address: str, port: str):
     websocket_address = f'ws://{address}:{port}'
 
     control_panel = LeadAggregatorControlPanel(gateway_rest_api)
-    event_processor = LeadAggregatorEventProcessor(gateway_rest_api=gateway_rest_api)
+    event_processor = LeadAggregatorEventProcessor(secrets_per_client=2, gateway_rest_api=gateway_rest_api)
 
     event_listener.listen(event_processor, websocket_address)
 

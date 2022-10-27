@@ -15,6 +15,7 @@ RUN pip install prompt_toolkit==2.0.10 pygments websockets
 #
 #ENV PATH=$CONDA_DIR/bin:$PATH
 #
+RUN python --version
 COPY . /project
 WORKDIR /project
 #

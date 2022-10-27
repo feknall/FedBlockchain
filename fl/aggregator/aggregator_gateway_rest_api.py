@@ -20,7 +20,7 @@ class AggregatorGatewayRestApi(GatewayRestApi):
         response = requests.post(req_addr, json=body.to_map())
         print(response)
 
-    def get_model_secrets_for_current_round(self, model_id: str) -> list[ModelSecretResponse]:
+    def get_model_secrets_for_current_round(self, model_id: str) -> list:
         log_msg("Waiting 5 seconds for stupid reasons :)")
         time.sleep(5)
         log_msg("Sending reading model secrets for current round...")

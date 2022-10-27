@@ -2,12 +2,16 @@ import json
 
 import requests
 
-from fl.dto import ModelMetadata
+from fl.dto import ModelMetadata, EndRoundModel
 from fl.gateway_rest_api import GatewayRestApi
 from identity.base.support.utils import log_json, log_msg
 
 
 class FlAdminGatewayRestApi(GatewayRestApi):
+
+    def get_end_round_model(self, model_id: str) -> EndRoundModel:
+        req_addr = self.base_url + '/flAdmin/getEndRoundModel'
+        return super().get_end_round_model_base(model_id, req_addr)
 
     def init_ledger(self):
         response = requests.get(self.base_url + '/flAdmin/initLedger')

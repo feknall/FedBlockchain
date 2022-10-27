@@ -13,7 +13,6 @@ class FlAdminControlPanel(SimplePeriodic):
         self.modelId = str(randint(0, 100000))
 
     def create_model_metadata(self):
-
         cfg = Config()
         body = ModelMetadata(self.modelId, "model1", str(cfg.number_of_clients),
                              str(cfg.number_of_servers),

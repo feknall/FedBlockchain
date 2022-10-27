@@ -21,7 +21,7 @@ class FlAdminEventProcessor(EventProcessor):
         end_round_model = self.gateway_rest_api.get_end_round_model(self.modelId)
         weights = pickle.loads(base64.b64decode(end_round_model.weights))
 
-        model = mnist_common.get_model(mnist_common.input_shape)
+        model = mnist_common.get_model()
         model.set_weights(weights)
         model.evaluate(x_test, y_test, verbose=1)
 

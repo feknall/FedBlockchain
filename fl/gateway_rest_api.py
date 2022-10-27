@@ -13,12 +13,11 @@ class GatewayRestApi:
     def __init__(self, base_url):
         self.base_url = base_url
 
-    def get_end_round_model(self, model_id: str) -> EndRoundModel:
+    def get_end_round_model_base(self, model_id: str, req_addr) -> EndRoundModel:
         log_msg("Getting end round model...")
         log_msg("Waiting 5 seconds for stupid reasons :)")
         time.sleep(5)
 
-        req_addr = self.base_url + '/trainer/getEndRoundModel'
         log_msg(f"Request address: {req_addr}")
 
         params = {

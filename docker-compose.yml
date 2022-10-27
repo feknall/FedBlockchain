@@ -1,6 +1,6 @@
 version: "3.9"
 services:
-  aggregator-org1:
+  aggregatorOrg1:
     container_name: core-aggregator.org1.example.com
     image: dist-fed-core:latest
     labels:
@@ -10,7 +10,7 @@ services:
       - "localhost"
       - "8091"
     network_mode: "host"
-  aggregator-org2:
+  aggregatorOrg2:
     container_name: core-aggregator.org2.example.com
     image: dist-fed-core:latest
     labels:
@@ -19,16 +19,6 @@ services:
         - "aggregator"
         - "localhost"
         - "8092"
-    network_mode: "host"
-  flAdmin:
-    container_name: core-flAdmin.org2.example.com
-    image: dist-fed-core:latest
-    labels:
-      service: flAdmin-core
-    command:
-      - "flAdmin"
-      - "localhost"
-      - "8083"
     network_mode: "host"
   leadAggregator:
     container_name: core-leadAggregator.org2.example.com
@@ -61,4 +51,20 @@ services:
       - "localhost"
       - "8081"
       - "2"
+    network_mode: "host"
+  flAdmin:
+    container_name: core-flAdmin.org2.example.com
+    image: dist-fed-core:latest
+    labels:
+      service: flAdmin-core
+    command:
+      - "flAdmin"
+      - "localhost"
+      - "8083"
+    depends_on:
+      - trainer01
+      - trainer02
+      - aggregatorOrg1
+      - aggregatorOrg2
+      - leadAggregator
     network_mode: "host"

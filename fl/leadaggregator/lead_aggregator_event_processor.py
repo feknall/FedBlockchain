@@ -7,7 +7,7 @@ import numpy as np
 from fl.flevents.event_processor import EventProcessor
 from fl.leadaggregator.lead_aggregator_gateway_rest_api import LeadAggregatorGatewayRestApi
 from fl.dto import AggregatedSecret, \
-    EndRoundModel
+    EndRoundModel, ModelMetadata
 from identity.base.support.utils import log_msg
 
 
@@ -15,8 +15,9 @@ class LeadAggregatorEventProcessor(EventProcessor):
     current_round = -1
     gateway_rest_api = None
 
-    def __init__(self, gateway_rest_api: LeadAggregatorGatewayRestApi):
+    def __init__(self, secrets_per_client, gateway_rest_api: LeadAggregatorGatewayRestApi):
         self.gateway_rest_api = gateway_rest_api
+        self.secretsPerClient = secrets_per_client
 
     def aggregated_secret_added_event(self, event_payload):
         x = json.loads(event_payload)
@@ -55,3 +56,9 @@ class LeadAggregatorEventProcessor(EventProcessor):
         self.gateway_rest_api.add_end_round_model(end_round_model)
 
         log_msg("Lead aggregation finished successfully.")
+
+    def start_training_event(self, event_payload):
+        x = json.loads(event_payload)
+        metadata = ModelMetadata(**x)
+        log_msg(f"EVENT: A model training started. modelId: {metadata.modelId}")
+        self.modelId = metadata.modelId

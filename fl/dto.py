@@ -43,9 +43,10 @@ class ModelSecretRequest:
 
     def __init__(self, modelId, datasetSize, weights1=None, weights2=None):
         self.modelId = modelId
+        self.datasetSize = datasetSize
         self.weights1 = weights1
         self.weights2 = weights2
-        self.datasetSize = datasetSize
+
 
     def to_map(self):
         return self.__dict__
