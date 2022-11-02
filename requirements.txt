@@ -28,9 +28,13 @@ rlp==0.5.1
 unflatten~=0.1
 qrcode[pil]~=6.1
 
-numpy~=1.23.1
-tensorflow~=2.8.2
+numpy
 asyncpg~=0.25.0
-yaml~=0.2.5
+
 pygments~=2.12.0
-websockets~=10.3
+websockets
+python3-indy>=1.11.1<2
+
+aries-askar~=0.2.5
+indy-credx~=0.3
+indy-vdr~=0.3.3
