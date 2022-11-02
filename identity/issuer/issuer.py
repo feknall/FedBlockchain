@@ -292,7 +292,7 @@ async def main(args):
 
 
 if __name__ == "__main__":
-    parser = arg_parser(ident="issuer", port=8020)
+    parser = arg_parser(ident="notClient", port=8020)
     args = parser.parse_args()
 
     ENABLE_PYDEVD_PYCHARM = os.getenv("ENABLE_PYDEVD_PYCHARM", "").lower()

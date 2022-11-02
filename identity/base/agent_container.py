@@ -382,7 +382,7 @@ class AriesAgent(DemoAgent):
         #     log_status("#27 Process the proof provided by X")
         #     log_status("#28 Check if proof is valid")
         #     proof = await self.admin_POST(
-        #         f"/present-proof/records/{presentation_exchange_id}/verify-presentation"
+        #         f"/present-proof/records/{presentation_exchange_id}/verifier-presentation"
         #     )
         #     self.log("Proof =", proof["verified"])
         #
@@ -524,11 +524,11 @@ class AriesAgent(DemoAgent):
         #     )
         #
         # elif state == "presentation-received":
-        #     # verify role
+        #     # verifier role
         #     log_status("#27 Process the proof provided by X")
         #     log_status("#28 Check if proof is valid")
         #     proof = await self.admin_POST(
-        #         f"/present-proof-2.0/records/{pres_ex_id}/verify-presentation"
+        #         f"/present-proof-2.0/records/{pres_ex_id}/verifier-presentation"
         #     )
         #     self.log("Proof =", proof["verified"])
         #     self.last_proof_received = proof
@@ -1087,7 +1087,7 @@ def arg_parser(ident: str = None, port: int = 8020):
     """
     Standard command-line arguements.
 
-    "ident", if specified, refers to one of the standard demo personas - client, faber, acme or performance.
+    "ident", if specified, refers to one of the standard demo personas - client, notClient, acme or performance.
     """
     parser = argparse.ArgumentParser(
         description="Runs a " + (ident or "identity") + " demo agent."
@@ -1190,7 +1190,7 @@ def arg_parser(ident: str = None, port: int = 8020):
             "--reuse-connections",
             action="store_true",
             help=(
-                "Reuse connections by using Faber public key in the invite. "
+                "Reuse connections by using notClient public key in the invite. "
                 "Only applicable for AIP 2.0 (OOB) connections."
             ),
         )
@@ -1374,13 +1374,13 @@ async def test_main(
 ):
     """Test to startup a couple of agents."""
 
-    faber_container = None
+    not_client_container = None
     client_container = None
     try:
         # initialize the containers
-        faber_container = AgentContainer(
+        not_client_container = AgentContainer(
             genesis_txns=genesis,
-            ident="Faber.agent",
+            ident="NotClient.agent",
             start_port=start_port,
             no_auto=no_auto,
             revocation=revocation,
@@ -1411,8 +1411,8 @@ async def test_main(
             aip=aip,
         )
 
-        # start the agents - faber gets a public DID and schema/cred def
-        await faber_container.initialize(
+        # start the agents - notClient gets a public DID and schema/cred def
+        await not_client_container.initialize(
             schema_name="degree schema",
             schema_attrs=[
                 "name",
@@ -1423,15 +1423,15 @@ async def test_main(
         )
         await client_container.initialize()
 
-        # faber create invitation
-        invite = await faber_container.generate_invitation()
+        # notClient create invitation
+        invite = await not_client_container.generate_invitation()
 
         # client accept invitation
         invite_details = invite["invitation"]
         connection = await client_container.input_invitation(invite_details)
 
-        # wait for faber connection to activate
-        await faber_container.detect_connection()
+        # wait for notClient connection to activate
+        await not_client_container.detect_connection()
         await client_container.detect_connection()
 
         # TODO faber issue credential to alice
@@ -1451,9 +1451,9 @@ async def test_main(
             if client_container:
                 log_msg("Shutting down client agent ...")
                 await client_container.terminate()
-            if faber_container:
-                log_msg("Shutting down faber agent ...")
-                await faber_container.terminate()
+            if not_client_container:
+                log_msg("Shutting down notClient agent ...")
+                await not_client_container.terminate()
         except Exception as e:
             LOGGER.exception("Error terminating agent:", e)
             terminated = False

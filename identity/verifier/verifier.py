@@ -8,6 +8,7 @@ from random import randint
 from aiohttp import ClientError
 
 from identity import role_constatns
+from identity.base.support.agent import CRED_FORMAT_INDY, CRED_FORMAT_JSON_LD
 from identity.base.support.utils import log_json
 from identity.common.fabric_ca_args_parser import FabricCaArgParser
 from identity.common.fabric_ca_client_wrapper import FabricCaClientWrapper
@@ -19,10 +20,7 @@ from identity.base.agent_container import (  # noqa:E402
     create_agent_with_args,
     AriesAgent,
 )
-from identity.base import (  # noqa:E402
-    CRED_FORMAT_INDY,
-    CRED_FORMAT_JSON_LD,
-)
+
 from identity.base.support.utils import (  # noqa:E402
     log_msg,
     log_status,
@@ -86,7 +84,7 @@ async def main(args):
                                                      fabric_ca_arg_parser.secret)
     fabric_ca_client_wrapper.enroll()
 
-    verifier_agent = await create_agent_with_args(args, ident="Verifier")
+    verifier_agent = await create_agent_with_args(args, ident="notClient")
 
     try:
         log_status(
@@ -272,7 +270,7 @@ async def main(args):
 
                     pres_ex_id = await prompt("Enter pres-ex-id: ")
                     verify_resp = await verifier_agent.agent.admin_POST(
-                        '/present-proof/records/' + pres_ex_id + '/verify-presentation')
+                        '/present-proof/records/' + pres_ex_id + '/verifier-presentation')
                     log_json(verify_resp)
                     if verify_resp['verified'] == "true":
                         log_msg("Identity verified successfully.")
@@ -337,7 +335,7 @@ async def main(args):
 
 
 if __name__ == "__main__":
-    parser = arg_parser(ident="verifier", port=8040)
+    parser = arg_parser(ident="notClient", port=8040)
     args = parser.parse_args()
 
     ENABLE_PYDEVD_PYCHARM = os.getenv("ENABLE_PYDEVD_PYCHARM", "").lower()
