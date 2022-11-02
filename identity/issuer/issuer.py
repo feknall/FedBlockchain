@@ -73,7 +73,7 @@ class IssuerAgent(AriesAgent):
 
 
 async def main(args):
-    issuer_agent = await create_agent_with_args(args, ident="issuer")
+    issuer_agent = await create_agent_with_args(args, ident="notClient")
 
     try:
         log_status(
@@ -149,14 +149,12 @@ async def main(args):
 
             if option is None or option in "xX":
                 break
-
             elif option in "dD" and issuer_agent.endorser_role:
                 endorser_did = await prompt("Enter Endorser's DID: ")
                 await issuer_agent.agent.admin_POST(
                     f"/transactions/{issuer_agent.agent.connection_id}/set-endorser-info",
                     params={"endorser_did": endorser_did},
                 )
-
             elif option in "tT":
                 exchange_tracing = not exchange_tracing
                 log_msg(
@@ -164,14 +162,12 @@ async def main(args):
                         "ON" if exchange_tracing else "OFF"
                     )
                 )
-
             elif option == "3":
                 msg = await prompt("Enter message: ")
                 await issuer_agent.agent.admin_POST(
                     f"/connections/{issuer_agent.agent.connection_id}/send-message",
                     {"content": msg},
                 )
-
             elif option == "4":
                 log_msg(
                     "Creating a new invitation, please receive "
@@ -182,7 +178,6 @@ async def main(args):
                     json.dumps(invi_rec["invitation"]), label="Invitation Data:", color=None
                 )
                 issuer_agent.agent.connection_id = invi_rec["connection_id"]
-
             elif option == "6" and issuer_agent.revocation:
                 try:
                     resp = await issuer_agent.agent.admin_POST(
@@ -203,7 +198,6 @@ async def main(args):
                     log_json(resp)
                 except Exception as e:
                     log_msg("Something went wrong. Error: {}".format(str(e)))
-
             elif option == "8":
                 try:
                     resp = await issuer_agent.agent.admin_GET("/issue-credential/records")

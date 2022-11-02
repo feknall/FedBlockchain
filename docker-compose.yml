@@ -2,7 +2,7 @@ version: "3.9"
 services:
   aggregatorOrg1:
     container_name: core-aggregator.org1.example.com
-    image: dist-fed-core:latest
+    image: dist-fed-core-fl:latest
     labels:
       service: aggregator-core
     command:
@@ -12,7 +12,7 @@ services:
     network_mode: "host"
   aggregatorOrg2:
     container_name: core-aggregator.org2.example.com
-    image: dist-fed-core:latest
+    image: dist-fed-core-fl:latest
     labels:
       service: aggregator-core
     command:
@@ -22,7 +22,7 @@ services:
     network_mode: "host"
   leadAggregator:
     container_name: core-leadAggregator.org2.example.com
-    image: dist-fed-core:latest
+    image: dist-fed-core-fl:latest
     labels:
       service: leadAggregator-core
     command:
@@ -32,7 +32,7 @@ services:
     network_mode: "host"
   trainer01:
     container_name: core-trainer01.example.com
-    image: dist-fed-core:latest
+    image: dist-fed-core-fl:latest
     labels:
       service: trainer-core
     command:
@@ -43,7 +43,7 @@ services:
     network_mode: "host"
   trainer02:
     container_name: core-trainer02.example.com
-    image: dist-fed-core:latest
+    image: dist-fed-core-fl:latest
     labels:
       service: trainer-core
     command:
@@ -54,7 +54,7 @@ services:
     network_mode: "host"
   flAdmin:
     container_name: core-flAdmin.org2.example.com
-    image: dist-fed-core:latest
+    image: dist-fed-core-fl:latest
     labels:
       service: flAdmin-core
     command:
