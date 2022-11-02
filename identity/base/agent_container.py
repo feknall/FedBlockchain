@@ -558,7 +558,7 @@ class AriesAgent(DemoAgent):
         with log_timer("Generate invitation duration:"):
             # Generate an invitation
             log_status(
-                "#7 Create a connection to alice and print out the invite details"
+                "#7 Create a connection to client and print out the invite details"
             )
             invi_rec = await self.get_invite(
                 use_did_exchange,
@@ -872,7 +872,7 @@ class AgentContainer:
         return matched
 
     async def request_proof(self, proof_request):
-        log_status("#20 Request proof of degree from alice")
+        log_status("#20 Request proof of degree from client")
 
         if self.cred_type == CRED_FORMAT_INDY:
             indy_proof_request = {
@@ -1087,7 +1087,7 @@ def arg_parser(ident: str = None, port: int = 8020):
     """
     Standard command-line arguements.
 
-    "ident", if specified, refers to one of the standard demo personas - alice, faber, acme or performance.
+    "ident", if specified, refers to one of the standard demo personas - client, faber, acme or performance.
     """
     parser = argparse.ArgumentParser(
         description="Runs a " + (ident or "identity") + " demo agent."
@@ -1117,7 +1117,7 @@ def arg_parser(ident: str = None, port: int = 8020):
         metavar=("<port>"),
         help="Choose the starting port number to listen on",
     )
-    if (not ident) or (ident != "alice"):
+    if (not ident) or (ident != "client"):
         parser.add_argument(
             "--did-exchange",
             action="store_true",
@@ -1132,7 +1132,7 @@ def arg_parser(ident: str = None, port: int = 8020):
         metavar=("<tails-server-base-url>"),
         help="Tails server base url",
     )
-    if (not ident) or (ident != "alice"):
+    if (not ident) or (ident != "client"):
         parser.add_argument(
             "--cred-type",
             type=str,
@@ -1185,7 +1185,7 @@ def arg_parser(ident: str = None, port: int = 8020):
             "directly."
         ),
     )
-    if (not ident) or (ident != "alice"):
+    if (not ident) or (ident != "client"):
         parser.add_argument(
             "--reuse-connections",
             action="store_true",
@@ -1375,7 +1375,7 @@ async def test_main(
     """Test to startup a couple of agents."""
 
     faber_container = None
-    alice_container = None
+    client_container = None
     try:
         # initialize the containers
         faber_container = AgentContainer(
@@ -1395,9 +1395,9 @@ async def test_main(
             cred_type=cred_type,
             aip=aip,
         )
-        alice_container = AgentContainer(
+        client_container = AgentContainer(
             genesis_txns=genesis,
-            ident="Alice.agent",
+            ident="Client.agent",
             start_port=start_port + 10,
             no_auto=no_auto,
             revocation=False,
@@ -1421,18 +1421,18 @@ async def test_main(
                 "grade",
             ],
         )
-        await alice_container.initialize()
+        await client_container.initialize()
 
         # faber create invitation
         invite = await faber_container.generate_invitation()
 
-        # alice accept invitation
+        # client accept invitation
         invite_details = invite["invitation"]
-        connection = await alice_container.input_invitation(invite_details)
+        connection = await client_container.input_invitation(invite_details)
 
         # wait for faber connection to activate
         await faber_container.detect_connection()
-        await alice_container.detect_connection()
+        await client_container.detect_connection()
 
         # TODO faber issue credential to alice
         # TODO alice check for received credential
@@ -1448,9 +1448,9 @@ async def test_main(
         terminated = True
         try:
             # shut down containers at the end of the test
-            if alice_container:
-                log_msg("Shutting down alice agent ...")
-                await alice_container.terminate()
+            if client_container:
+                log_msg("Shutting down client agent ...")
+                await client_container.terminate()
             if faber_container:
                 log_msg("Shutting down faber agent ...")
                 await faber_container.terminate()
