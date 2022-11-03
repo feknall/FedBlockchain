@@ -2,7 +2,7 @@ version: "3.9"
 services:
   aggregatorOrg1:
     container_name: fl-aggregator.org1.example.com
-    image: hmaid/hyperledger/dist-fed-core-fl
+    image: hmaid/hyperledger:dist-fed-core-fl
     labels:
       service: aggregator-core
     command:
