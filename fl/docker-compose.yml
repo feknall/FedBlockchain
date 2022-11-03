@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   aggregatorOrg1:
-    container_name: core-aggregator.org1.example.com
+    container_name: fl-aggregator.org1.example.com
     image: dist-fed-core-fl:latest
     labels:
       service: aggregator-core
@@ -11,7 +11,7 @@ services:
       - "8091"
     network_mode: "host"
   aggregatorOrg2:
-    container_name: core-aggregator.org2.example.com
+    container_name: fl-aggregator.org2.example.com
     image: dist-fed-core-fl:latest
     labels:
       service: aggregator-core
@@ -21,7 +21,7 @@ services:
         - "8092"
     network_mode: "host"
   leadAggregator:
-    container_name: core-leadAggregator.org2.example.com
+    container_name: fl-leadAggregator.org2.example.com
     image: dist-fed-core-fl:latest
     labels:
       service: leadAggregator-core
@@ -31,7 +31,7 @@ services:
       - "8082"
     network_mode: "host"
   trainer01:
-    container_name: core-trainer01.example.com
+    container_name: fl-trainer01.example.com
     image: dist-fed-core-fl:latest
     labels:
       service: trainer-core
@@ -42,7 +42,7 @@ services:
       - "0"
     network_mode: "host"
   trainer02:
-    container_name: core-trainer02.example.com
+    container_name: fl-trainer02.example.com
     image: dist-fed-core-fl:latest
     labels:
       service: trainer-core
@@ -53,7 +53,7 @@ services:
       - "1"
     network_mode: "host"
   flAdmin:
-    container_name: core-flAdmin.org2.example.com
+    container_name: fl-flAdmin.org2.example.com
     image: dist-fed-core-fl:latest
     labels:
       service: flAdmin-core
