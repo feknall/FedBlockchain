@@ -2,7 +2,7 @@ version: "3.9"
 services:
   client:
     container_name: identity-client
-    image: dist-fed-core-identity-client:latest
+    image: hmaid/hyperledger:dist-fed-core-identity-client
     labels:
       service: identity-client
     network_mode: "host"
@@ -30,7 +30,7 @@ services:
       - "/home/hamid/Documents/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Trainer1@org1.example.com/msp"
   verifier:
     container_name: identity-verifier
-    image: dist-fed-core-identity-verifier:latest
+    image: hmaid/hyperledger:dist-fed-core-identity-verifier
     labels:
       service: identity-verifier
     network_mode: "host"
@@ -58,7 +58,7 @@ services:
       - "/home/hamid/Documents/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Trainer1@org1.example.com/msp"
   issuer:
     container_name: identity-issuer
-    image: dist-fed-core-identity-issuer:latest
+    image: hmaid/hyperledger:dist-fed-core-identity-issuer
     labels:
       service: identity-issuer
     network_mode: "host"
